@@ -59,3 +59,15 @@ pub enum Method {
     Patch,
     Delete,
 }
+
+impl From<Method> for reqwest::Method {
+    fn from(method: Method) -> Self {
+        match method {
+            Method::Get => reqwest::Method::GET,
+            Method::Post => reqwest::Method::POST,
+            Method::Put => reqwest::Method::PUT,
+            Method::Patch => reqwest::Method::PATCH,
+            Method::Delete => reqwest::Method::DELETE,
+        }
+    }
+}

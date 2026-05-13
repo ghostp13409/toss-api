@@ -1,22 +1,9 @@
 pub mod args;
 
-use crate::engine::http::RequestEngine;
 use crate::core::env::Environment;
-use reqwest::Method as ReqwestMethod;
+use crate::engine::http::RequestEngine;
+use args::Commands;
 use std::collections::HashMap;
-use args::{Commands, Method};
-
-impl From<Method> for ReqwestMethod {
-    fn from(m: Method) -> Self {
-        match m {
-            Method::Get => ReqwestMethod::GET,
-            Method::Post => ReqwestMethod::POST,
-            Method::Put => ReqwestMethod::PUT,
-            Method::Patch => ReqwestMethod::PATCH,
-            Method::Delete => ReqwestMethod::DELETE,
-        }
-    }
-}
 
 pub async fn run_cli(command: Commands) -> Result<(), Box<dyn std::error::Error>> {
     match command {
@@ -61,9 +48,25 @@ pub async fn run_cli(command: Commands) -> Result<(), Box<dyn std::error::Error>
                 return Ok(());
             }
 
+            let body_type = if let Some(b) = final_body {
+                crate::core::collection::RequestBody::Raw {
+                    content: b,
+                    content_type: "application/json".to_string(),
+                }
+            } else {
+                crate::core::collection::RequestBody::None
+            };
+
             let engine = RequestEngine::new();
             let response = engine
-                .send(method.into(), &final_url, final_headers, final_body)
+                .send(
+                    method.into(),
+                    &final_url,
+                    final_headers,
+                    Vec::new(),
+                    body_type,
+                    crate::core::collection::Auth::None,
+                )
                 .await?;
 
             if !silent && !headers_only {

@@ -5,6 +5,7 @@
 - **User-friendly Interface**: Intuitive design for easy navigation.
 - **Customizable**: Flexible settings to suit your needs.
 - **CLI/TUI**: Command-line and terminal-based interfaces available.
+- **Advanced Imports**: Supports importing apis from straight up from your project.
 
 ## REST Features
 
@@ -81,7 +82,19 @@
 
 **Note:** Currently not implemented, but can think of something in future
 
-Requirements:
+
+## Advanced Imports
+
+Toss can import APIs straight from your project controllers or routes. It should be done by running a cli command with the path to your project.
+
+- Search for controllers/routes files throughout the project.
+- Extract API endpoints and metadata from the files.
+- Create a Toss Collection from the imported APIs.
+- Toss Collection should have structure if the project has a defined structure.(e.g. if the project has multiple controllers/routes files, they should be grouped into folders in the Toss Collection)
+- Supported Frameworks: Spring, ASP.NET, Ruby on Rails, Next.js, Express.js, Django, Flask, FastAPI, Laravel, Quarkus
+  - Future frameworks: React, Vue.js, Svelte, Angular
+- Only REST APIs are supported for now.
+
 
 - Needs to be free
 - Needs to be secure

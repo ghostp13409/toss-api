@@ -52,16 +52,16 @@ fn parse_item(item: &Value) -> Option<CollectionItem> {
         };
 
         let mut headers = Vec::new();
-        if let Some(header_array) = request.get("header") {
-            if let Some(headers_list) = header_array.as_array() {
-                for h in headers_list {
-                    headers.push(KVParam {
-                        key: h["key"].as_str().unwrap_or("").to_string(),
-                        value: h["value"].as_str().unwrap_or("").to_string(),
-                        enabled: !h["disabled"].as_bool().unwrap_or(false),
-                        description: h["description"].as_str().map(|s| s.to_string()),
-                    });
-                }
+        if let Some(header_array) = request.get("header")
+            && let Some(headers_list) = header_array.as_array()
+        {
+            for h in headers_list {
+                headers.push(KVParam {
+                    key: h["key"].as_str().unwrap_or("").to_string(),
+                    value: h["value"].as_str().unwrap_or("").to_string(),
+                    enabled: !h["disabled"].as_bool().unwrap_or(false),
+                    description: h["description"].as_str().map(|s| s.to_string()),
+                });
             }
         }
 
