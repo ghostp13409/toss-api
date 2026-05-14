@@ -97,7 +97,9 @@ pub fn render(f: &mut Frame, app: &mut App) {
                     ])
                     .split(block.inner(area));
 
-                f.set_cursor_position((layout[1].x + app.cursor_position as u16, layout[1].y));
+                let cursor_pos = (layout[1].x + app.cursor_position as u16, layout[1].y);
+                app.last_cursor_pos = cursor_pos;
+                f.set_cursor_position(cursor_pos);
             } else if app.focused_panel == FocusedPanel::Details {
                 // Find cursor position in KV editor
                 if matches!(
@@ -138,8 +140,30 @@ pub fn render(f: &mut Frame, app: &mut App) {
                         }
                     };
 
-                    f.set_cursor_position((x + offset + app.cursor_position as u16, y));
+                    let cursor_pos = (x + offset + app.cursor_position as u16, y);
+                    app.last_cursor_pos = cursor_pos;
+                    f.set_cursor_position(cursor_pos);
                 }
+            } else if app.focused_panel == FocusedPanel::Environments {
+                let area = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints([
+                        Constraint::Percentage(50), // Collections
+                        Constraint::Percentage(50), // APIs / Environments
+                    ])
+                    .split(columns[0])[1];
+                let inner_area = Block::default().borders(Borders::ALL).inner(area);
+                let x = inner_area.x;
+                let y = inner_area.y + 1 + app.selected_env_index as u16;
+
+                let offset = match app.property_editor_field {
+                    PropertyEditorField::Key => 0,
+                    PropertyEditorField::Value => (40 * inner_area.width / 100) + 1,
+                    _ => 0,
+                };
+                let cursor_pos = (x + offset + app.cursor_position as u16, y);
+                app.last_cursor_pos = cursor_pos;
+                f.set_cursor_position(cursor_pos);
             }
         }
         InputMode::Rename | InputMode::CreateItem => {
@@ -1019,11 +1043,31 @@ fn render_autocomplete(f: &mut Frame, app: &App) {
         return;
     }
 
-    let area = centered_rect(30, 40, f.area());
+    let (cursor_x, cursor_y) = app.last_cursor_pos;
+    
+    // Width of the dropdown based on longest option or query
+    let width = options.iter().map(|s| s.len()).max().unwrap_or(10) as u16 + 4;
+    let height = (options.len().min(8) + 2) as u16;
+
+    // Adjust position if it goes off screen
+    let x = if cursor_x + width > f.area().width {
+        f.area().width.saturating_sub(width)
+    } else {
+        cursor_x
+    };
+    
+    let y = if cursor_y + height + 1 > f.area().height {
+        // Show above cursor if no space below
+        cursor_y.saturating_sub(height)
+    } else {
+        cursor_y + 1
+    };
+
+    let area = Rect::new(x, y, width, height);
     f.render_widget(Clear, area);
 
     let block = Block::default()
-        .title(" Variables (Enter to select) ")
+        .title(" Variables ")
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Cyan));
 

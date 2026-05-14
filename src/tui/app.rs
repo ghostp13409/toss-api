@@ -111,6 +111,7 @@ pub struct App {
     pub show_autocomplete: bool,
     pub autocomplete_query: String,
     pub autocomplete_index: usize,
+    pub last_cursor_pos: (u16, u16),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -324,6 +325,7 @@ impl App {
             show_autocomplete: false,
             autocomplete_query: String::new(),
             autocomplete_index: 0,
+            last_cursor_pos: (0, 0),
         }
     }
 

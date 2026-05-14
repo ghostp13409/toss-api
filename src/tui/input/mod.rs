@@ -809,14 +809,29 @@ fn handle_editing_mode(app: &mut App, key: KeyEvent) {
             {
                 app.delete_char_url();
                 app.sync_params_from_url();
+                if app.url[..app.cursor_position].ends_with("{{") {
+                    app.show_autocomplete = true;
+                    app.autocomplete_query.clear();
+                    app.autocomplete_index = 0;
+                }
             } else if app.focused_panel == FocusedPanel::Details {
                 let mut current_val = app.get_kv_editor_value();
                 app.delete_char(&mut current_val);
-                app.update_kv_param(current_val);
+                app.update_kv_param(current_val.clone());
+                if current_val[..app.cursor_position].ends_with("{{") {
+                    app.show_autocomplete = true;
+                    app.autocomplete_query.clear();
+                    app.autocomplete_index = 0;
+                }
             } else if app.focused_panel == FocusedPanel::Environments {
                 let mut current_val = app.get_env_editor_value();
                 app.delete_char(&mut current_val);
-                app.update_env_editor_value(current_val);
+                app.update_env_editor_value(current_val.clone());
+                if current_val[..app.cursor_position].ends_with("{{") {
+                    app.show_autocomplete = true;
+                    app.autocomplete_query.clear();
+                    app.autocomplete_index = 0;
+                }
             }
         }
         KeyCode::Delete => {
@@ -888,9 +903,10 @@ fn handle_autocomplete_input(app: &mut App, key: KeyEvent) {
         KeyCode::Char(c) => {
             app.autocomplete_query.push(c);
             app.autocomplete_index = 0;
-            // Also insert char into the actual field so user sees what they type
+            
             if app.focused_panel == FocusedPanel::RequestBar && app.active_request_part == RequestBarPart::Url {
                 app.insert_char_url(c);
+                app.sync_params_from_url();
             } else if app.focused_panel == FocusedPanel::Details {
                 let mut val = app.get_kv_editor_value();
                 app.insert_char(&mut val, c);
@@ -902,23 +918,38 @@ fn handle_autocomplete_input(app: &mut App, key: KeyEvent) {
             }
         }
         KeyCode::Backspace => {
-            if !app.autocomplete_query.is_empty() {
+            let query_is_empty = app.autocomplete_query.is_empty();
+            if !query_is_empty {
                 app.autocomplete_query.pop();
                 app.autocomplete_index = 0;
-            } else {
-                app.show_autocomplete = false;
             }
-            // Also delete from actual field
+
             if app.focused_panel == FocusedPanel::RequestBar && app.active_request_part == RequestBarPart::Url {
                 app.delete_char_url();
+                app.sync_params_from_url();
+                if app.url[..app.cursor_position].ends_with("{{") {
+                    app.show_autocomplete = true;
+                } else if query_is_empty {
+                    app.show_autocomplete = false;
+                }
             } else if app.focused_panel == FocusedPanel::Details {
                 let mut val = app.get_kv_editor_value();
                 app.delete_char(&mut val);
-                app.update_kv_param(val);
+                app.update_kv_param(val.clone());
+                if val[..app.cursor_position].ends_with("{{") {
+                    app.show_autocomplete = true;
+                } else if query_is_empty {
+                    app.show_autocomplete = false;
+                }
             } else if app.focused_panel == FocusedPanel::Environments {
                 let mut val = app.get_env_editor_value();
                 app.delete_char(&mut val);
-                app.update_env_editor_value(val);
+                app.update_env_editor_value(val.clone());
+                if val[..app.cursor_position].ends_with("{{") {
+                    app.show_autocomplete = true;
+                } else if query_is_empty {
+                    app.show_autocomplete = false;
+                }
             }
         }
         _ => {}
