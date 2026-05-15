@@ -1,3 +1,11 @@
 pub mod express;
 pub mod fastapi;
 pub mod spring;
+pub mod aspnet;
+pub mod flask;
+pub mod django;
+pub mod laravel;
+pub mod ruby_on_rails;
+pub mod golang;
+pub mod quarkus;
+pub mod nextjs;

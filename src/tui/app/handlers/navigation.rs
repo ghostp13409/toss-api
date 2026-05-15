@@ -10,44 +10,82 @@ impl App {
 
     pub fn move_cursor_left(&mut self) {
         if self.cursor_position > 0 {
-            self.cursor_position -= 1;
+            let mut new_pos = self.cursor_position;
+            while new_pos > 0 {
+                new_pos -= 1;
+                if self.url.is_char_boundary(new_pos) {
+                    break;
+                }
+            }
+            self.cursor_position = new_pos;
         }
     }
 
     pub fn move_cursor_right(&mut self, max: usize) {
         if self.cursor_position < max {
-            self.cursor_position += 1;
+            let mut new_pos = self.cursor_position;
+            while new_pos < max {
+                new_pos += 1;
+                if self.url.is_char_boundary(new_pos) {
+                    break;
+                }
+            }
+            self.cursor_position = new_pos;
         }
     }
 
     pub fn insert_char(&mut self, target: &mut String, c: char) {
         let pos = self.cursor_position.min(target.len());
         target.insert(pos, c);
-        self.cursor_position = pos + 1;
+        self.cursor_position = pos + c.len_utf8();
     }
 
     pub fn delete_char(&mut self, target: &mut String) {
-        if self.cursor_position > 0 && self.cursor_position <= target.len() {
-            target.remove(self.cursor_position - 1);
-            self.cursor_position -= 1;
+        if self.cursor_position > 0 {
+            let mut prev_pos = self.cursor_position;
+            while prev_pos > 0 {
+                prev_pos -= 1;
+                if target.is_char_boundary(prev_pos) {
+                    break;
+                }
+            }
+            target.remove(prev_pos);
+            self.cursor_position = prev_pos;
         }
     }
 
     pub fn delete_char_forward(&mut self, target: &mut String) {
         if self.cursor_position < target.len() {
+            let mut next_pos = self.cursor_position;
+            let mut i = 0;
+            while i < 4 && next_pos < target.len() {
+                next_pos += 1;
+                if target.is_char_boundary(next_pos) {
+                    break;
+                }
+                i += 1;
+            }
             target.remove(self.cursor_position);
         }
     }
 
     pub fn insert_char_rename(&mut self, c: char) {
-        self.rename_input.insert(self.cursor_position, c);
-        self.cursor_position += 1;
+        let pos = self.cursor_position.min(self.rename_input.len());
+        self.rename_input.insert(pos, c);
+        self.cursor_position = pos + c.len_utf8();
     }
 
     pub fn delete_char_rename(&mut self) {
         if self.cursor_position > 0 {
-            self.rename_input.remove(self.cursor_position - 1);
-            self.cursor_position -= 1;
+            let mut prev_pos = self.cursor_position;
+            while prev_pos > 0 {
+                prev_pos -= 1;
+                if self.rename_input.is_char_boundary(prev_pos) {
+                    break;
+                }
+            }
+            self.rename_input.remove(prev_pos);
+            self.cursor_position = prev_pos;
         }
     }
 
@@ -58,14 +96,22 @@ impl App {
     }
 
     pub fn insert_char_url(&mut self, c: char) {
-        self.url.insert(self.cursor_position, c);
-        self.cursor_position += 1;
+        let pos = self.cursor_position.min(self.url.len());
+        self.url.insert(pos, c);
+        self.cursor_position = pos + c.len_utf8();
     }
 
     pub fn delete_char_url(&mut self) {
         if self.cursor_position > 0 {
-            self.url.remove(self.cursor_position - 1);
-            self.cursor_position -= 1;
+            let mut prev_pos = self.cursor_position;
+            while prev_pos > 0 {
+                prev_pos -= 1;
+                if self.url.is_char_boundary(prev_pos) {
+                    break;
+                }
+            }
+            self.url.remove(prev_pos);
+            self.cursor_position = prev_pos;
         }
     }
 

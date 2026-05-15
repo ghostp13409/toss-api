@@ -7,6 +7,7 @@ use ratatui::{
 };
 use crate::core::collection::KVParam;
 use crate::tui::app::{App, FocusedPanel, PropertyEditorField, PropertyTab, RequestBarPart};
+use crate::tui::ui::syntax::{apply_env_vars, format_content, highlight_content};
 use crate::tui::ui::utils::{create_block, get_method_enum_color, highlight_env_vars, title_with_key};
 
 pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
@@ -36,7 +37,11 @@ pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
         title_with_key("E", "Response"),
         app.focused_panel == FocusedPanel::Response,
     );
-    let response_content = Paragraph::new(highlight_env_vars(app.response_body.as_str()))
+
+    let formatted_body = format_content(&app.response_body, app.response_content_type.as_deref());
+    let highlighted_body = highlight_content(&formatted_body, app.response_content_type.as_deref());
+
+    let response_content = Paragraph::new(highlighted_body)
         .block(response_block)
         .scroll((app.response_scroll, app.response_horizontal_scroll))
         .wrap(Wrap { trim: false });
@@ -46,14 +51,42 @@ pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
         title_with_key("T", "Stat"),
         app.focused_panel == FocusedPanel::Stats,
     );
-    let stat_content = Paragraph::new(if app.response_stats.is_empty() {
-        "No Data".to_string()
+
+    let mut stat_lines = Vec::new();
+
+    if let Some(status) = &app.response_status {
+        let style = if status.contains("200") || status.starts_with('2') {
+            Style::default().bg(Color::Green).fg(Color::Black).add_modifier(Modifier::BOLD)
+        } else if status.starts_with('3') {
+            Style::default().bg(Color::Cyan).fg(Color::Black).add_modifier(Modifier::BOLD)
+        } else if status.starts_with('4') {
+            Style::default().bg(Color::Yellow).fg(Color::Black).add_modifier(Modifier::BOLD)
+        } else if status.starts_with('5') || status == "ERROR" {
+            Style::default().bg(Color::Red).fg(Color::White).add_modifier(Modifier::BOLD)
+        } else {
+            Style::default().add_modifier(Modifier::BOLD)
+        };
+        stat_lines.push(Line::from(vec![
+            Span::raw(" Status: "),
+            Span::styled(format!(" {} ", status), style),
+        ]));
+        stat_lines.push(Line::raw(""));
+    }
+
+    if app.response_stats.is_empty() {
+        if app.response_status.is_none() {
+            stat_lines.push(Line::raw("No Data"));
+        }
     } else {
-        app.response_stats.clone()
-    })
-    .block(stat_block)
-    .scroll((app.response_scroll, 0))
-    .wrap(Wrap { trim: false });
+        for line in app.response_stats.lines() {
+            stat_lines.push(Line::raw(line.to_string()));
+        }
+    }
+
+    let stat_content = Paragraph::new(stat_lines)
+        .block(stat_block)
+        .scroll((app.response_scroll, 0))
+        .wrap(Wrap { trim: false });
     f.render_widget(stat_content, response_area[1]);
 }
 
@@ -316,18 +349,17 @@ pub fn render_details_area(f: &mut Frame, app: &mut App, area: Rect) {
                     );
                     f.render_widget(Paragraph::new(" No body ").block(block), area);
                 }
-                crate::core::collection::RequestBody::Raw { content, .. } => {
+                crate::core::collection::RequestBody::Raw { content, content_type } => {
                     let block = create_block(
                         title_with_key("B", title),
                         app.focused_panel == FocusedPanel::Details,
                     );
-                    let body_text = format!(
-                        "(Press 'v' to edit)
+                    
+                    let formatted_body = format_content(&content, Some(content_type.as_str()));
+                    let mut highlighted_body = highlight_content(&formatted_body, Some(content_type.as_str()));
+                    apply_env_vars(&mut highlighted_body);
 
-{}",
-                        content
-                    );
-                    let p = Paragraph::new(highlight_env_vars(&body_text))
+                    let p = Paragraph::new(highlighted_body)
                         .block(block)
                         .scroll((app.details_scroll as u16, 0))
                         .wrap(Wrap { trim: false });

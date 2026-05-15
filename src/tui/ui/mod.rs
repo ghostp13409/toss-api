@@ -8,6 +8,7 @@ use ratatui::{
 use crate::tui::app::{App, FocusedPanel, InputMode, PropertyEditorField, PropertyTab, RequestBarPart};
 use crate::tui::ui::utils::{centered_rect, title_with_key};
 
+pub mod syntax;
 pub mod utils;
 pub mod widgets;
 
@@ -102,7 +103,8 @@ fn render_cursor(f: &mut Frame, app: &mut App, chunks: &[Rect], columns: &[Rect]
                     ])
                     .split(block.inner(area));
 
-                let cursor_pos = (layout[1].x + app.cursor_position as u16, layout[1].y);
+                let cursor_x = app.url[..app.cursor_position.min(app.url.len())].chars().count() as u16;
+                let cursor_pos = (layout[1].x + cursor_x, layout[1].y);
                 app.last_cursor_pos = cursor_pos;
                 f.set_cursor_position(cursor_pos);
             } else if app.focused_panel == FocusedPanel::Details {
@@ -145,7 +147,9 @@ fn render_cursor(f: &mut Frame, app: &mut App, chunks: &[Rect], columns: &[Rect]
                         }
                     };
 
-                    let cursor_pos = (x + offset + app.cursor_position as u16, y);
+                    let current_val = app.get_kv_editor_value();
+                    let cursor_x = current_val[..app.cursor_position.min(current_val.len())].chars().count() as u16;
+                    let cursor_pos = (x + offset + cursor_x, y);
                     app.last_cursor_pos = cursor_pos;
                     f.set_cursor_position(cursor_pos);
                 }
@@ -166,14 +170,17 @@ fn render_cursor(f: &mut Frame, app: &mut App, chunks: &[Rect], columns: &[Rect]
                     PropertyEditorField::Value => (40 * inner_area.width / 100) + 1,
                     _ => 0,
                 };
-                let cursor_pos = (x + offset + app.cursor_position as u16, y);
+                let current_val = app.get_env_editor_value();
+                let cursor_x = current_val[..app.cursor_position.min(current_val.len())].chars().count() as u16;
+                let cursor_pos = (x + offset + cursor_x, y);
                 app.last_cursor_pos = cursor_pos;
                 f.set_cursor_position(cursor_pos);
             }
         }
         InputMode::Rename | InputMode::CreateItem => {
             let area = centered_rect(40, 10, f.area());
-            f.set_cursor_position((area.x + 1 + app.cursor_position as u16, area.y + 1));
+            let cursor_x = app.rename_input[..app.cursor_position.min(app.rename_input.len())].chars().count() as u16;
+            f.set_cursor_position((area.x + 1 + cursor_x, area.y + 1));
         }
         InputMode::Search if app.show_search => {
             let sidebar_area = columns[0];
@@ -182,18 +189,21 @@ fn render_cursor(f: &mut Frame, app: &mut App, chunks: &[Rect], columns: &[Rect]
                 .constraints([Constraint::Min(0), Constraint::Length(3)])
                 .split(sidebar_area);
             let area = chunks[1];
-            f.set_cursor_position((area.x + 1 + app.cursor_position as u16, area.y + 1));
+            let cursor_x = app.search_query[..app.cursor_position.min(app.search_query.len())].chars().count() as u16;
+            f.set_cursor_position((area.x + 1 + cursor_x, area.y + 1));
         }
         InputMode::Command => {
+            let cursor_x = app.command_input[..app.cursor_position.min(app.command_input.len())].chars().count() as u16;
             f.set_cursor_position((
-                chunks[2].x + 1 + app.cursor_position as u16 + 1, // +1 for ':'
+                chunks[2].x + 1 + cursor_x + 1, // +1 for ':'
                 chunks[2].y,
             ));
         }
         _ => {
             if app.show_method_search {
                 let area = centered_rect(20, 30, f.area());
-                f.set_cursor_position((area.x + 1 + app.cursor_position as u16, area.y + 1));
+                let cursor_x = app.method_search_query[..app.cursor_position.min(app.method_search_query.len())].chars().count() as u16;
+                f.set_cursor_position((area.x + 1 + cursor_x, area.y + 1));
             }
         }
     }

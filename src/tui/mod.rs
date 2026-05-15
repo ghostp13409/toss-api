@@ -24,7 +24,7 @@ use tokio::sync::mpsc;
 enum AppEvent {
     Input(KeyEvent),
     Tick,
-    HttpResponse(String, Option<String>, Option<String>),
+    HttpResponse(String, Option<String>, Option<String>, Option<String>),
 }
 
 pub fn run_tui() -> Result<(), Box<dyn std::error::Error>> {
@@ -117,8 +117,9 @@ where
                     handle_input(app, key);
                 }
                 AppEvent::Tick => {}
-                AppEvent::HttpResponse(body, status, stats) => {
+                AppEvent::HttpResponse(body, status, stats, content_type) => {
                     app.response_body = body;
+                    app.response_content_type = content_type;
                     app.response_status = status;
                     if let Some(s) = stats {
                         app.response_stats = s;
@@ -214,6 +215,11 @@ where
                                     let duration = start.elapsed();
                                     let status = Some(res.status().to_string());
                                     let version = format!("{:?}", res.version());
+                                    let content_type = res
+                                        .headers()
+                                        .get(reqwest::header::CONTENT_TYPE)
+                                        .and_then(|v| v.to_str().ok())
+                                        .map(|s| s.to_string());
                                     let body = res
                                         .text()
                                         .await
@@ -224,7 +230,12 @@ where
                                         duration, size, version
                                     );
                                     let _ = tx_res
-                                        .send(AppEvent::HttpResponse(body, status, Some(stats)))
+                                        .send(AppEvent::HttpResponse(
+                                            body,
+                                            status,
+                                            Some(stats),
+                                            content_type,
+                                        ))
                                         .await;
                                 }
                                 Err(e) => {
@@ -232,6 +243,7 @@ where
                                         .send(AppEvent::HttpResponse(
                                             format!("Error: {}", e),
                                             Some("ERROR".to_string()),
+                                            None,
                                             None,
                                         ))
                                         .await;

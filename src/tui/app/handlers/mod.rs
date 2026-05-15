@@ -39,6 +39,7 @@ impl App {
             property_editor_row: 0,
             property_editor_field: PropertyEditorField::Key,
             response_body: String::new(),
+            response_content_type: None,
             response_status: None,
             response_stats: String::new(),
             pending_actions: Vec::new(),

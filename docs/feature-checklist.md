@@ -1,91 +1,95 @@
-# Features
+# Feature Checklist
 
-- **Cross-platform**: Works on Windows, macOS, and Linux.
-- **High Performance**: Optimized for speed and efficiency.
-- **User-friendly Interface**: Intuitive design for easy navigation.
-- **Customizable**: Flexible settings to suit your needs.
-- **CLI/TUI**: Command-line and terminal-based interfaces available.
-- **Advanced Imports**: Supports importing apis from straight up from your project.
+## Cross-Platform
+- [x] Linux
+- [x] Windows
+- [ ] macOS (not tested)
 
-## REST Features
+## Rest
 
 - **Methods**
-  - GET
-  - POST
-  - PUT
-  - PATCH
-  - DELETE
-  - OPTIONS (in future)
-  - HEAD (in future)
-  - TRACE (in future)
-  - CONNECT (in future)
-- **Params**
-- **Headers**
-- **Authentication**
-  - Basic auth
-  - Bearer token
-  - Digest
-  - JWT
-  - OAuth1-2
-  - API Key
+  - [x] GET
+  - [x] POST
+  - [x] PUT
+  - [x] PATCH
+  - [x] DELETE
+  - [ ] OPTIONS (in future)
+  - [ ] HEAD (in future)
+  - [ ] TRACE (in future)
+  - [ ] CONNECT (in future)
+- [x] **Params**
+- [x] **Headers**
+- [ ] **Authentication**
+  - [x] Basic auth
+  - [x] Bearer token
+  - [x] API Key
+  - [ ] Digest
+  - [ ] JWT
+  - [ ] OAuth1-2
 - **Body**
-  - form-data
-  - x-www-form-urlencoded
-  - raw
+  - [x] form-data
+  - [x] x-www-form-urlencoded
+  - [x] raw
     - Text
     - JavaScript
     - JSON
     - HTML
     - XML
-    - **Note:** Support for beautifying
-  - GraphQL
-    - **Note:** Auto-Fetching of GraphQL schema in future
-- **Scripts** (JavaScript)
-  - Pre-request scripts
-  - Post-request scripts
+  - [x] Linter, Beautifier, Syntax highlighting
+  - [ ] GraphQL
+    - [ ] Auto-Fetching of GraphQL (in future)
+- [ ] **Scripts** (JavaScript)
+  - [ ] Pre-request scripts
+  - [ ] Post-request scripts
 
 ## Collections
-
-- **Organization**
-  - Folders
-  - Subfolders
-- **Import/Export**
-  - Postman
-  - Insomnia
-  - Swagger/OpenAPI
-- **Environment Variables**
-  - Global
-  - Collection-specific
-  - Environment-specific
-- **Authorization**
-  - Inherit from collection
-  - Override at request level
-- **Runs**
-  - Single request
-  - Collection run
-  - Data-driven testing (in future)
-  - Results reporting
-  - Result Visualization (in future)
-    - Charts
-    - Graphs
-    - Custom dashboards
-    - Performance metrics
-
-## Import/Export
-
-- **Formats**
-  - Postman
-  - Insomnia
-  - Swagger/OpenAPI
-
-## Account Backup and Sync
-
-**Note:** Currently not implemented, but can think of something in future
-
+- [x] **Organization**
+  - [x] Folders
+  - [x] Subfolders
+- [ ] **Import**
+  - [x] Postman
+  - [ ] Insomnia
+  - [ ] Swagger/OpenAPI
+- [ ] **Export**
+  - [ ] Postman
+  - [ ] Insomnia
+  - [ ] Swagger/OpenAPI
+- [ ] **Environment Variables**
+  - [ ] Global
+  - [x] Collection-specific
+  - [ ] Environment-specific
+- [ ] **Authorization**
+  - [ ] Inherit from collection
+  - [ ] Override at request level
+- [ ] **Runs**
+  - [ ] Single request
+  - [ ] Collection run
+  - [ ] Data-driven testing (in future)
+  - [ ] Results reporting
+  - [ ] Result Visualization (in future)
+    - [ ] Charts
+    - [ ] Graphs
+    - [ ] Custom dashboards
+    - [ ] Performance metrics
 
 ## Advanced Imports
 
-Toss can import APIs straight from your project controllers or routes. It should be done by running a cli command with the path to your project.
+- [ ] **Frameworks**
+  - [x] Spring
+  - [x] ASP.NET
+  - [x] Ruby on Rails
+  - [x] Next.js
+  - [x] Express.js
+  - [x] Django
+  - [x] Flask
+  - [x] FastAPI
+  - [x] Laravel
+  - [x] Quarkus
+  - [ ] React
+  - [ ] Vue.js
+  - [ ] Svelte
+  - [ ] Angular
+- Toss can import APIs straight from your project controllers or routes. It should be done by running a cli command with the path to your project.
 
 - Search for controllers/routes files throughout the project.
 - Extract API endpoints and metadata from the files.

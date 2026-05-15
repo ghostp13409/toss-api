@@ -31,6 +31,7 @@ pub struct App {
     pub property_editor_row: usize,
     pub property_editor_field: PropertyEditorField,
     pub response_body: String,
+    pub response_content_type: Option<String>,
     pub response_status: Option<String>,
     pub response_stats: String,
     pub pending_actions: Vec<TuiAction>,

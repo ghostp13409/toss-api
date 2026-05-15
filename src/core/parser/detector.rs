@@ -10,6 +10,10 @@ pub enum Framework {
     Spring,
     NextJs,
     Laravel,
+    AspNet,
+    RubyOnRails,
+    Golang,
+    Quarkus,
     Unknown,
 }
 
@@ -48,11 +52,39 @@ pub fn detect_framework(path: &Path) -> Framework {
         || path.join("build.gradle").exists()
         || path.join("build.gradle.kts").exists()
     {
+        if let Ok(content) = std::fs::read_to_string(path.join(if path.join("pom.xml").exists() { "pom.xml" } else { "build.gradle" })) {
+            if content.contains("quarkus") {
+                return Framework::Quarkus;
+            }
+        }
         return Framework::Spring;
     }
 
     if path.join("artisan").exists() {
         return Framework::Laravel;
+    }
+
+    if path.join("go.mod").exists() {
+        return Framework::Golang;
+    }
+
+    if path.join("Gemfile").exists() {
+        if let Ok(content) = std::fs::read_to_string(path.join("Gemfile")) {
+            if content.contains("'rails'") || content.contains("\"rails\"") {
+                return Framework::RubyOnRails;
+            }
+        }
+    }
+
+    // ASP.NET detection
+    if let Ok(entries) = std::fs::read_dir(path) {
+        for entry in entries.filter_map(|e| e.ok()) {
+            if let Some(ext) = entry.path().extension() {
+                if ext == "csproj" || ext == "sln" {
+                    return Framework::AspNet;
+                }
+            }
+        }
     }
 
     Framework::Unknown

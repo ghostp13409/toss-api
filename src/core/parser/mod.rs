@@ -70,6 +70,38 @@ fn parse_single_project(path: &Path, framework: detector::Framework) -> anyhow::
             let parser = frameworks::spring::SpringParser;
             parser.parse(path)
         }
+        detector::Framework::AspNet => {
+            let parser = frameworks::aspnet::AspNetParser;
+            parser.parse(path)
+        }
+        detector::Framework::Flask => {
+            let parser = frameworks::flask::FlaskParser;
+            parser.parse(path)
+        }
+        detector::Framework::Django => {
+            let parser = frameworks::django::DjangoParser;
+            parser.parse(path)
+        }
+        detector::Framework::Laravel => {
+            let parser = frameworks::laravel::LaravelParser;
+            parser.parse(path)
+        }
+        detector::Framework::RubyOnRails => {
+            let parser = frameworks::ruby_on_rails::RubyOnRailsParser;
+            parser.parse(path)
+        }
+        detector::Framework::Golang => {
+            let parser = frameworks::golang::GolangParser;
+            parser.parse(path)
+        }
+        detector::Framework::Quarkus => {
+            let parser = frameworks::quarkus::QuarkusParser;
+            parser.parse(path)
+        }
+        detector::Framework::NextJs => {
+            let parser = frameworks::nextjs::NextJsParser;
+            parser.parse(path)
+        }
         _ => anyhow::bail!("Unsupported framework {:?} at {:?}", framework, path),
     }
 }
