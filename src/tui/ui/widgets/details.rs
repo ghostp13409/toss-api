@@ -27,6 +27,10 @@ pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
     render_properties_tabs(f, app, chunks[1]);
     render_details_area(f, app, chunks[2]);
 
+    app.layout_rects.request_bar = Some(chunks[0]);
+    app.layout_rects.properties_tabs = Some(chunks[1]);
+    app.layout_rects.details = Some(chunks[2]);
+
     let response_area = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
@@ -101,6 +105,9 @@ pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
         .block(stat_block)
         .scroll((app.response_scroll, 0))
         .wrap(Wrap { trim: false });
+    
+    app.layout_rects.response = Some(response_area[0]);
+    app.layout_rects.stats = Some(response_area[1]);
     f.render_widget(stat_content, response_area[1]);
 }
 

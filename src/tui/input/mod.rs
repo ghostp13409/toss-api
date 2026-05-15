@@ -3,6 +3,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 pub mod autocomplete;
 pub mod editing;
+pub mod mouse;
 pub mod normal;
 pub mod popups;
 

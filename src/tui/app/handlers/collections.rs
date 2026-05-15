@@ -407,6 +407,30 @@ impl App {
         }
     }
 
+    pub fn select_request(&mut self, id: String, method: crate::cli::args::Method) {
+        self.save_current_request();
+        self.current_request_id = Some(id.clone());
+        self.method = method;
+        let id_clone = id.clone();
+        
+        // Find URL across all collections
+        let mut found_url = None;
+        for col in &self.collections {
+            if let Some(req) = col.find_request(&id_clone) {
+                found_url = Some(req.url.clone());
+                break;
+            }
+        }
+        
+        if let Some(url) = found_url {
+            self.url = url;
+        }
+        
+        self.focus_request_bar();
+        self.cursor_position = self.url.len();
+        self.reset_scroll();
+    }
+
     pub fn get_visible_collections(&self) -> Vec<VisibleItem> {
         let mut visible_items = Vec::new();
         let query = &self.search_query;

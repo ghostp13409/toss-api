@@ -6,7 +6,9 @@ use crate::engine::http::RequestEngine;
 use app::{App, TuiAction};
 use arboard::Clipboard;
 use crossterm::{
-    event::{self, Event, KeyEvent},
+    event::{
+        self, DisableMouseCapture, EnableMouseCapture, Event, KeyEvent, MouseEvent,
+    },
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
@@ -23,6 +25,7 @@ use tokio::sync::mpsc;
 
 enum AppEvent {
     Input(KeyEvent),
+    Mouse(MouseEvent),
     Tick,
     HttpResponse(String, Option<String>, Option<String>, Option<String>),
 }
@@ -31,7 +34,7 @@ pub fn run_tui() -> Result<(), Box<dyn std::error::Error>> {
     // setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen)?;
+    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
@@ -48,7 +51,11 @@ pub fn run_tui() -> Result<(), Box<dyn std::error::Error>> {
 
     // restore terminal
     disable_raw_mode()?;
-    execute!(terminal.backend_mut(), LeaveAlternateScreen,)?;
+    execute!(
+        terminal.backend_mut(),
+        LeaveAlternateScreen,
+        DisableMouseCapture
+    )?;
     terminal.show_cursor()?;
 
     // Save data
@@ -91,9 +98,17 @@ where
                 if is_paused_clone.load(Ordering::SeqCst) {
                     continue;
                 }
-                if let Ok(Event::Key(key)) = event::read() {
-                    if key.kind == event::KeyEventKind::Press {
-                        let _ = tx_event.send(AppEvent::Input(key)).await;
+                if let Ok(event) = event::read() {
+                    match event {
+                        Event::Key(key) => {
+                            if key.kind == event::KeyEventKind::Press {
+                                let _ = tx_event.send(AppEvent::Input(key)).await;
+                            }
+                        }
+                        Event::Mouse(mouse) => {
+                            let _ = tx_event.send(AppEvent::Mouse(mouse)).await;
+                        }
+                        _ => {}
                     }
                 }
             }
@@ -111,10 +126,13 @@ where
     loop {
         terminal.draw(|f| ui::render(f, app))?;
 
-        if let Ok(event) = rx.try_recv() {
+        while let Ok(event) = rx.try_recv() {
             match event {
                 AppEvent::Input(key) => {
                     handle_input(app, key);
+                }
+                AppEvent::Mouse(mouse) => {
+                    input::mouse::handle_mouse_event(app, mouse);
                 }
                 AppEvent::Tick => {}
                 AppEvent::HttpResponse(body, status, stats, content_type) => {

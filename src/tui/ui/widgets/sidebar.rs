@@ -64,20 +64,23 @@ pub fn render_left_column(f: &mut Frame, app: &mut App, area: Rect) {
             }
         })
         .collect();
+let collections_list = List::new(collections_items).block(create_block(
+    title_with_key("C", "Collections"),
+    app.focused_panel == FocusedPanel::Collections,
+));
+app.collections_state
+    .select(Some(app.selected_collection_index));
 
-    let collections_list = List::new(collections_items).block(create_block(
-        title_with_key("C", "Collections"),
-        app.focused_panel == FocusedPanel::Collections,
-    ));
-    app.collections_state
-        .select(Some(app.selected_collection_index));
-    f.render_stateful_widget(collections_list, chunks[0], &mut app.collections_state);
+app.layout_rects.collections = Some(chunks[0]);
+f.render_stateful_widget(collections_list, chunks[0], &mut app.collections_state);
 
-    render_left_bottom_panel(f, app, chunks[1]);
+render_left_bottom_panel(f, app, chunks[1]);
 }
 
 pub fn render_left_bottom_panel(f: &mut Frame, app: &mut App, area: Rect) {
-    let is_apis = app.left_bottom_tab == crate::tui::app::LeftBottomTab::Apis;
+app.layout_rects.apis = Some(area);
+app.layout_rects.environments = Some(area);
+let is_apis = app.left_bottom_tab == crate::tui::app::LeftBottomTab::Apis;
     let is_envs = app.left_bottom_tab == crate::tui::app::LeftBottomTab::Environments;
 
     let api_style = if is_apis {

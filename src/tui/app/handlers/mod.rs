@@ -57,6 +57,7 @@ impl App {
             autocomplete_query: String::new(),
             autocomplete_index: 0,
             last_cursor_pos: (0, 0),
+            layout_rects: super::state::LayoutRects::default(),
         }
     }
 

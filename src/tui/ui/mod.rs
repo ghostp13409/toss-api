@@ -45,6 +45,10 @@ pub fn render(f: &mut Frame, app: &mut App) {
     render_left_column(f, app, columns[0]);
     render_right_column(f, app, columns[1]);
 
+    // Save major rects
+    app.layout_rects.collections = Some(columns[0]); // Initial, will be refined in render_left_column
+    app.layout_rects.response = Some(columns[1]);    // Initial, will be refined in render_right_column
+
     // 3. Footer
     render_footer(f, app, chunks[2]);
 

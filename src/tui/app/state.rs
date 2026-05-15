@@ -1,7 +1,20 @@
 use super::enums::*;
 use crate::cli::args::Method;
 use crate::core::collection::Collection;
+use ratatui::layout::Rect;
 use ratatui::widgets::{ListState, TableState};
+
+#[derive(Default, Clone, Debug)]
+pub struct LayoutRects {
+    pub collections: Option<Rect>,
+    pub apis: Option<Rect>,
+    pub environments: Option<Rect>,
+    pub request_bar: Option<Rect>,
+    pub properties_tabs: Option<Rect>,
+    pub details: Option<Rect>,
+    pub response: Option<Rect>,
+    pub stats: Option<Rect>,
+}
 
 pub struct App {
     pub input_mode: InputMode,
@@ -49,6 +62,7 @@ pub struct App {
     pub autocomplete_query: String,
     pub autocomplete_index: usize,
     pub last_cursor_pos: (u16, u16),
+    pub layout_rects: LayoutRects,
 }
 
 pub struct VisibleItem {
