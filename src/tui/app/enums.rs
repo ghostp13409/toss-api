@@ -10,6 +10,7 @@ pub enum InputMode {
     ConfirmQuit,
     ConfirmDelete,
     CreateItem,
+    Help,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]

@@ -60,6 +60,7 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                 match app.focused_panel {
                     FocusedPanel::Collections => app.selected_collection_index = 0,
                     FocusedPanel::Apis => app.selected_api_index = 0,
+                    FocusedPanel::Environments => app.selected_env_index = 0,
                     FocusedPanel::Details => app.property_editor_row = 0,
                     FocusedPanel::Response | FocusedPanel::Stats => app.response_scroll = 0,
                     _ => {}
@@ -77,6 +78,9 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                 }
                 FocusedPanel::Apis => {
                     app.selected_api_index = app.get_visible_items().len().saturating_sub(1)
+                }
+                FocusedPanel::Environments => {
+                    app.selected_env_index = app.get_active_collection_env_vars().len().saturating_sub(1)
                 }
                 FocusedPanel::Details => {
                     if let Some(req) = app.get_current_request() {
@@ -152,6 +156,7 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
         }
 
         KeyCode::Char('q') => app.input_mode = InputMode::ConfirmQuit,
+        KeyCode::Char('?') => app.input_mode = InputMode::Help,
         KeyCode::Tab => app.next_panel(),
         KeyCode::BackTab => app.prev_panel(),
 
@@ -323,7 +328,7 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
             }
             FocusedPanel::Environments => {
                 app.input_mode = InputMode::Editing;
-                app.property_editor_field = PropertyEditorField::Key;
+                app.property_editor_field = PropertyEditorField::Value;
                 let current_val = app.get_env_editor_value();
                 app.cursor_position = current_val.len();
             }
@@ -388,7 +393,7 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                 app.property_editor_field = match app.property_editor_field {
                     PropertyEditorField::Key => PropertyEditorField::Value,
                     PropertyEditorField::Value => PropertyEditorField::Value,
-                    _ => PropertyEditorField::Key,
+                    _ => PropertyEditorField::Value,
                 };
             }
             FocusedPanel::RequestBar => {

@@ -3,6 +3,15 @@ use crate::core::collection::{Collection, CollectionItem, Request};
 use super::super::enums::*;
 use super::super::state::{App, VisibleItem};
 
+fn matches_query(target: &str, query: &str) -> bool {
+    if query.is_empty() {
+        return true;
+    }
+    let t = target.to_lowercase().replace([' ', '-', '_'], "");
+    let q = query.to_lowercase().replace([' ', '-', '_'], "");
+    t.contains(&q)
+}
+
 impl App {
     pub fn update_active_scope_from_tree(&mut self) {
         let visible = self.get_visible_collections();
@@ -400,11 +409,17 @@ impl App {
 
     pub fn get_visible_collections(&self) -> Vec<VisibleItem> {
         let mut visible_items = Vec::new();
-        let query = self.search_query.to_lowercase();
+        let query = &self.search_query;
 
         for col in &self.collections {
+            let col_matches = matches_query(&col.name, query);
+            let any_child_matches = col
+                .items
+                .iter()
+                .any(|item| Self::any_descendant_matches(item, query));
+
             if !query.is_empty() && self.focused_panel == FocusedPanel::Collections {
-                if !col.name.to_lowercase().contains(&query) {
+                if !col_matches && !any_child_matches {
                     continue;
                 }
             }
@@ -413,10 +428,25 @@ impl App {
                 name: col.name.clone(),
                 depth: 0,
                 item_type: VisibleItemType::Collection {
-                    expanded: col.expanded,
+                    expanded: if !query.is_empty() && any_child_matches {
+                        true
+                    } else {
+                        col.expanded
+                    },
                 },
             });
-            if col.expanded {
+
+            if !query.is_empty() && self.focused_panel == FocusedPanel::Collections {
+                for item in &col.items {
+                    Self::collect_filtered_collections_recursive(
+                        item,
+                        1,
+                        query,
+                        &mut visible_items,
+                        col_matches,
+                    );
+                }
+            } else if col.expanded {
                 for item in &col.items {
                     Self::collect_visible_items_recursive(item, 1, &mut visible_items);
                 }
@@ -425,9 +455,76 @@ impl App {
         visible_items
     }
 
+    fn any_descendant_matches(item: &CollectionItem, query: &str) -> bool {
+        match item {
+            CollectionItem::Request(r) => matches_query(&r.name, query),
+            CollectionItem::Folder(f) => {
+                if matches_query(&f.name, query) {
+                    return true;
+                }
+                f.items
+                    .iter()
+                    .any(|sub| Self::any_descendant_matches(sub, query))
+            }
+        }
+    }
+
+    fn collect_filtered_collections_recursive(
+        item: &CollectionItem,
+        depth: usize,
+        query: &str,
+        visible_items: &mut Vec<VisibleItem>,
+        parent_matches: bool,
+    ) {
+        match item {
+            CollectionItem::Folder(f) => {
+                let matches = matches_query(&f.name, query);
+                let any_child_matches = f
+                    .items
+                    .iter()
+                    .any(|sub| Self::any_descendant_matches(sub, query));
+
+                if parent_matches || matches || any_child_matches {
+                    visible_items.push(VisibleItem {
+                        name: f.name.clone(),
+                        depth,
+                        item_type: VisibleItemType::Folder {
+                            expanded: if !query.is_empty() && any_child_matches {
+                                true
+                            } else {
+                                f.expanded
+                            },
+                        },
+                    });
+                    for sub_item in &f.items {
+                        Self::collect_filtered_collections_recursive(
+                            sub_item,
+                            depth + 1,
+                            query,
+                            visible_items,
+                            parent_matches || matches,
+                        );
+                    }
+                }
+            }
+            CollectionItem::Request(r) => {
+                if parent_matches || matches_query(&r.name, query) {
+                    visible_items.push(VisibleItem {
+                        name: r.name.clone(),
+                        depth,
+                        item_type: VisibleItemType::Request {
+                            method: r.method,
+                            id: r.id.clone(),
+                        },
+                    });
+                }
+            }
+        }
+    }
+
     pub fn get_visible_items(&self) -> Vec<VisibleItem> {
         let mut visible_items = Vec::new();
-        let query = self.search_query.to_lowercase();
+        let query = &self.search_query;
 
         if let Some(col) = self.collections.get(self.active_collection_index) {
             let items = if let Some(folder_id) = &self.active_folder_id {
@@ -438,7 +535,7 @@ impl App {
 
             if !query.is_empty() && self.focused_panel == FocusedPanel::Apis {
                 for item in items {
-                    Self::collect_filtered_items_recursive(item, 0, &query, &mut visible_items);
+                    Self::collect_filtered_items_recursive(item, 0, query, &mut visible_items, false);
                 }
             } else {
                 for item in items {
@@ -454,30 +551,41 @@ impl App {
         depth: usize,
         query: &str,
         visible_items: &mut Vec<VisibleItem>,
+        parent_matches: bool,
     ) {
         match item {
             CollectionItem::Folder(f) => {
-                let matches = f.name.to_lowercase().contains(query);
-                if matches {
+                let matches = matches_query(&f.name, query);
+                let any_child_matches = f
+                    .items
+                    .iter()
+                    .any(|sub| Self::any_descendant_matches(sub, query));
+
+                if parent_matches || matches || any_child_matches {
                     visible_items.push(VisibleItem {
                         name: f.name.clone(),
                         depth,
                         item_type: VisibleItemType::Folder {
-                            expanded: f.expanded,
+                            expanded: if !query.is_empty() && any_child_matches {
+                                true
+                            } else {
+                                f.expanded
+                            },
                         },
                     });
-                }
-                for sub_item in &f.items {
-                    Self::collect_filtered_items_recursive(
-                        sub_item,
-                        if matches { depth + 1 } else { depth },
-                        query,
-                        visible_items,
-                    );
+                    for sub_item in &f.items {
+                        Self::collect_filtered_items_recursive(
+                            sub_item,
+                            depth + 1,
+                            query,
+                            visible_items,
+                            parent_matches || matches,
+                        );
+                    }
                 }
             }
             CollectionItem::Request(r) => {
-                if r.name.to_lowercase().contains(query) {
+                if parent_matches || matches_query(&r.name, query) {
                     visible_items.push(VisibleItem {
                         name: r.name.clone(),
                         depth,

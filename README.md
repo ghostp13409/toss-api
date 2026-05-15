@@ -4,6 +4,22 @@ toss is a yet another tui api client, build with Rust and ratatui for fast and e
 
 What make toss special are it's unique QoL features baked straight into the 
 
+## Installation
+
+You can install `toss` using `cargo`, the Rust package manager.
+
+### From GitHub
+```bash
+cargo install --git https://github.com/ghostp13409/toss
+```
+
+### From Source
+```bash
+git clone https://github.com/ghostp13409/toss
+cd toss
+cargo install --path .
+```
+
 ## Key Features
 
 - **Fast and Efficient**: Built with Rust for high performance.

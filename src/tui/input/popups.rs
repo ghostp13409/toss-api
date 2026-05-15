@@ -8,6 +8,10 @@ pub fn handle_command_mode(app: &mut App, key: KeyEvent) {
             let cmd = app.command_input.clone();
             if let Some(path) = cmd.strip_prefix("import ") {
                 app.import_collection(path);
+            } else if let Some(path) = cmd.strip_prefix("parse ") {
+                app.parse_project_tui(path);
+            } else if cmd == "parse" {
+                app.parse_project_tui("");
             } else if cmd == "env create" {
                 app.create_smart_env();
             } else {
@@ -123,6 +127,15 @@ pub fn handle_create_item_mode(app: &mut App, key: KeyEvent) {
         KeyCode::Right => {
             let max = app.rename_input.len();
             app.move_cursor_right(max);
+        }
+        _ => {}
+    }
+}
+
+pub fn handle_help_mode(app: &mut App, key: KeyEvent) {
+    match key.code {
+        KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('?') | KeyCode::Enter => {
+            app.input_mode = InputMode::Normal
         }
         _ => {}
     }

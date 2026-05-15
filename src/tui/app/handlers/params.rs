@@ -44,7 +44,21 @@ impl App {
             }
         };
 
-        if let Ok(mut parsed_url) = Url::parse(&base_url) {
+        // If the URL is empty, we can't really sync params into it effectively
+        if base_url.is_empty() {
+            return;
+        }
+
+        // Try to parse. If it fails, it might be a relative URL or missing scheme.
+        // We'll try to prepend a dummy scheme to parse it.
+        let has_scheme = base_url.contains("://");
+        let parse_url = if has_scheme {
+            base_url.clone()
+        } else {
+            format!("http://{}", base_url)
+        };
+
+        if let Ok(mut parsed_url) = Url::parse(&parse_url) {
             parsed_url.query_pairs_mut().clear();
             for param in &params {
                 if param.enabled && (!param.key.is_empty() || !param.value.is_empty()) {
@@ -53,7 +67,13 @@ impl App {
                         .append_pair(&param.key, &param.value);
                 }
             }
-            let new_url = parsed_url.to_string();
+            
+            let mut new_url = parsed_url.to_string();
+            // If we added a dummy scheme, strip it back
+            if !has_scheme {
+                new_url = new_url.strip_prefix("http://").unwrap_or(&new_url).to_string();
+            }
+
             self.url = new_url.clone();
             if let Some(mut_req) = self.get_current_request_mut() {
                 mut_req.url = new_url;
@@ -62,7 +82,15 @@ impl App {
     }
 
     pub fn sync_params_from_url(&mut self) {
-        if let Ok(parsed_url) = Url::parse(&self.url) {
+        let url_clone = self.url.clone();
+        let has_scheme = url_clone.contains("://");
+        let parse_url = if has_scheme {
+            url_clone.clone()
+        } else {
+            format!("http://{}", url_clone)
+        };
+
+        if let Ok(parsed_url) = Url::parse(&parse_url) {
             let new_params: Vec<KVParam> = parsed_url
                 .query_pairs()
                 .map(|(k, v)| KVParam {
@@ -73,10 +101,9 @@ impl App {
                 })
                 .collect();
 
-            let url_str = parsed_url.to_string();
             if let Some(req) = self.get_current_request_mut() {
                 req.params = new_params;
-                req.url = url_str;
+                req.url = url_clone;
             }
         }
     }

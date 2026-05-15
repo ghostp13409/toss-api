@@ -2,6 +2,13 @@
 name = "toss"
 version = "0.1.0"
 edition = "2024"
+authors = ["Parth Gajjar <gajjarparth09@gmail.com>"]
+description = "A Vim-inspired TUI and CLI API client for exploring and testing endpoints"
+license = "GPL-3.0-only"
+repository = "https://github.com/ghostp13409/toss"
+readme = "README.md"
+keywords = ["tui", "cli", "api-client", "vim", "rest"]
+categories = ["command-line-utilities", "development-tools::networking"]
 
 [dependencies]
 anyhow = "1.0.102"

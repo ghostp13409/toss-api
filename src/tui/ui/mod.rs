@@ -25,7 +25,8 @@ pub fn render(f: &mut Frame, app: &mut App) {
         .split(f.area());
 
     // 1. Title
-    let title = Paragraph::new(" Toss 1.0.0 ")
+    let title_text = format!(" Toss {} ", env!("CARGO_PKG_VERSION"));
+    let title = Paragraph::new(title_text)
         .style(Style::default().add_modifier(Modifier::BOLD))
         .alignment(ratatui::layout::Alignment::Left);
     f.render_widget(title, chunks[0]);
@@ -60,6 +61,9 @@ pub fn render(f: &mut Frame, app: &mut App) {
     }
     if app.input_mode == InputMode::ConfirmQuit {
         render_quit_confirmation(f, app);
+    }
+    if app.input_mode == InputMode::Help {
+        render_help_popup(f, app);
     }
     if app.show_search {
         render_search_popup(f, app, columns[0]);
