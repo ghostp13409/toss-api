@@ -202,6 +202,30 @@ impl App {
         }
     }
 
+    pub fn parse_project_tui(&mut self, path_str: &str) {
+        let path = if path_str.is_empty() {
+            std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."))
+        } else {
+            std::path::PathBuf::from(path_str)
+        };
+
+        match crate::core::parser::parse_project(&path) {
+            Ok(new_col) => {
+                // Check if collection with same name already exists
+                if let Some(existing_idx) = self.collections.iter().position(|c| c.name == new_col.name) {
+                    // Update existing collection's items
+                    self.collections[existing_idx].items = new_col.items;
+                    // Keep env_vars as they might have been manually added/edited
+                } else {
+                    self.collections.push(new_col);
+                }
+            }
+            Err(e) => {
+                self.error_message = Some(format!("Failed to parse project: {}", e));
+            }
+        }
+    }
+
     pub fn get_autocomplete_options(&self) -> Vec<String> {
         let env_vars = self.get_active_collection_env_vars();
         let query = self.autocomplete_query.to_lowercase();

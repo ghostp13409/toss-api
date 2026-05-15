@@ -95,6 +95,15 @@ impl Collection {
         None
     }
 
+    pub fn find_request_by_name(&self, name: &str) -> Option<&Request> {
+        for item in &self.items {
+            if let Some(req) = item.find_request_by_name(name) {
+                return Some(req);
+            }
+        }
+        None
+    }
+
     pub fn replace_urls_with_placeholder(&mut self, base_url: &str, placeholder: &str) -> Vec<(String, String)> {
         let mut changed_ids = Vec::new();
         Self::recursive_replace(&mut self.items, base_url, placeholder, &mut changed_ids);
@@ -162,6 +171,26 @@ impl CollectionItem {
             CollectionItem::Folder(f) => {
                 for item in &f.items {
                     if let Some(req) = item.find_request(id) {
+                        return Some(req);
+                    }
+                }
+                None
+            }
+        }
+    }
+
+    pub fn find_request_by_name(&self, name: &str) -> Option<&Request> {
+        match self {
+            CollectionItem::Request(req) => {
+                if req.name == name {
+                    Some(req)
+                } else {
+                    None
+                }
+            }
+            CollectionItem::Folder(f) => {
+                for item in &f.items {
+                    if let Some(req) = item.find_request_by_name(name) {
                         return Some(req);
                     }
                 }

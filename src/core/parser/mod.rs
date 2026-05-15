@@ -10,26 +10,32 @@ pub trait SourceParser {
 
 pub fn parse_project<P: AsRef<Path>>(path: P) -> anyhow::Result<Collection> {
     let path = path.as_ref();
+    // Resolve absolute path to get correct folder name if path is "."
+    let abs_path = if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        std::env::current_dir()?.join(path)
+    };
     
     // First try direct detection at root
-    let framework = detector::detect_framework(path);
+    let framework = detector::detect_framework(&abs_path);
     if framework != detector::Framework::Unknown {
-        let col = parse_single_project(path, framework)?;
+        let col = parse_single_project(&abs_path, framework)?;
         if col.items.is_empty() {
-            anyhow::bail!("Found project at {:?} but no endpoints were extracted", path);
+            anyhow::bail!("Found project at {:?} but no endpoints were extracted", abs_path);
         }
         return Ok(col);
     }
 
     // If not found at root, discover recursively
-    let discovered = detector::discover_projects(path);
+    let discovered = detector::discover_projects(&abs_path);
     if discovered.is_empty() {
-        anyhow::bail!("Unsupported or unknown framework at {:?}", path);
+        anyhow::bail!("Unsupported or unknown framework at {:?}", abs_path);
     }
 
     let mut master_collection = Collection::new(format!(
         "{} (Workspace)",
-        path.file_name()
+        abs_path.file_name()
             .map(|n| n.to_string_lossy().to_string())
             .unwrap_or_else(|| "Root".to_string())
     ));
@@ -50,7 +56,7 @@ pub fn parse_project<P: AsRef<Path>>(path: P) -> anyhow::Result<Collection> {
     }
 
     if master_collection.items.is_empty() {
-        anyhow::bail!("Found projects but no endpoints were extracted from any of them at {:?}", path);
+        anyhow::bail!("Found projects but no endpoints were extracted from any of them at {:?}", abs_path);
     }
 
     Ok(master_collection)

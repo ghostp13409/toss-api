@@ -60,6 +60,61 @@ pub enum Commands {
         /// Path to the project directory
         path: String,
     },
+
+    /// Manage and list saved collections
+    Collections {
+        #[command(subcommand)]
+        command: CollectionsCommands,
+    },
+
+    /// Run a saved request from a collection
+    Run {
+        /// Name of the collection
+        collection: String,
+
+        /// Name of the request
+        request: String,
+
+        /// Name of the environment to use (if available in collection)
+        #[arg(short, long)]
+        env: Option<String>,
+
+        /// Suppress all output except the actual response body
+        #[arg(long)]
+        silent: bool,
+
+        /// Force the output to be raw JSON
+        #[arg(long)]
+        json: bool,
+    },
+
+    /// Manage and list environments
+    Env {
+        #[command(subcommand)]
+        command: EnvCommands,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum CollectionsCommands {
+    /// List all imported collections
+    List,
+    /// Show detailed contents of a collection
+    Show {
+        /// Name of the collection to show
+        name: String,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum EnvCommands {
+    /// List all collections that have environment variables
+    List,
+    /// Show variables for a specific collection
+    Show {
+        /// Name of the collection
+        collection: String,
+    },
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Serialize, Deserialize)]

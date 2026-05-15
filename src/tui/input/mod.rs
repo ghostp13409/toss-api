@@ -44,5 +44,6 @@ pub fn handle_input(app: &mut App, key: KeyEvent) {
         InputMode::ConfirmQuit => handle_confirm_quit(app, key),
         InputMode::ConfirmDelete => handle_confirm_delete(app, key),
         InputMode::CreateItem => handle_create_item_mode(app, key),
+        InputMode::Help => handle_help_mode(app, key),
     }
 }
