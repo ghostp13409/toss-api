@@ -6,9 +6,10 @@ authors = ["Parth Gajjar <gajjarparth09@gmail.com>"]
 description = "A Vim-inspired TUI and CLI API client for exploring and testing endpoints"
 license = "GPL-3.0-only"
 repository = "https://github.com/ghostp13409/toss"
+homepage = "https://github.com/ghostp13409/toss"
 readme = "README.md"
 keywords = ["tui", "cli", "api-client", "vim", "rest"]
-categories = ["command-line-utilities", "development-tools::networking"]
+categories = ["command-line-utilities", "network-programming", "development-tools"]
 
 [dependencies]
 anyhow = "1.0.102"
@@ -29,3 +30,10 @@ tokio = { version = "1.50.0", features = ["full"] }
 tui-syntax-highlight = "0.2.0"
 uuid = { version = "1.23.0", features = ["serde", "v4"] }
 walkdir = "2.5.0"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = 'abort'
+strip = true # Reduces binary size significantly
