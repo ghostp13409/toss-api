@@ -1,5 +1,7 @@
 use crate::cli::args::Method;
-use crate::core::collection::{Auth, Collection, CollectionItem, Folder, KVParam, Request, RequestBody};
+use crate::core::collection::{
+    Auth, Collection, CollectionItem, Folder, KVParam, Request, RequestBody,
+};
 use crate::core::parser::SourceParser;
 use regex::Regex;
 use std::path::Path;
@@ -70,7 +72,13 @@ impl SourceParser for DjangoParser {
                 }
 
                 if !requests.is_empty() {
-                    let file_name = entry.path().parent().and_then(|p| p.file_name()).unwrap_or_default().to_string_lossy().to_string();
+                    let file_name = entry
+                        .path()
+                        .parent()
+                        .and_then(|p| p.file_name())
+                        .unwrap_or_default()
+                        .to_string_lossy()
+                        .to_string();
                     let mut folder = Folder::new(format!("{}/urls.py", file_name));
                     folder.items = requests;
                     collection.items.push(CollectionItem::Folder(folder));

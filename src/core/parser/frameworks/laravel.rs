@@ -1,5 +1,7 @@
 use crate::cli::args::Method;
-use crate::core::collection::{Auth, Collection, CollectionItem, Folder, KVParam, Request, RequestBody};
+use crate::core::collection::{
+    Auth, Collection, CollectionItem, Folder, KVParam, Request, RequestBody,
+};
 use crate::core::parser::SourceParser;
 use regex::Regex;
 use std::path::Path;
@@ -25,7 +27,8 @@ impl SourceParser for LaravelParser {
         });
 
         // Route::get('/path', ...)
-        let route_regex = Regex::new(r#"Route::(get|post|put|patch|delete)\s*\(\s*['"]([^'"]+)['"]"#).unwrap();
+        let route_regex =
+            Regex::new(r#"Route::(get|post|put|patch|delete)\s*\(\s*['"]([^'"]+)['"]"#).unwrap();
 
         for entry in WalkDir::new(project_path.join("routes"))
             .into_iter()
@@ -62,7 +65,12 @@ impl SourceParser for LaravelParser {
                 }
 
                 if !requests.is_empty() {
-                    let file_name = entry.path().file_name().unwrap_or_default().to_string_lossy().to_string();
+                    let file_name = entry
+                        .path()
+                        .file_name()
+                        .unwrap_or_default()
+                        .to_string_lossy()
+                        .to_string();
                     let mut folder = Folder::new(file_name);
                     folder.items = requests;
                     collection.items.push(CollectionItem::Folder(folder));

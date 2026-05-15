@@ -1,9 +1,9 @@
+use super::enums::*;
+use super::state::App;
 use crate::cli::args::Method;
 use crate::core::collection::{Collection, CollectionItem, KVParam};
 use ratatui::widgets::{ListState, TableState};
 use std::collections::HashMap;
-use super::enums::*;
-use super::state::App;
 
 pub mod collections;
 pub mod navigation;
@@ -212,7 +212,9 @@ impl App {
         match crate::core::parser::parse_project(&path) {
             Ok(new_col) => {
                 // Check if collection with same name already exists
-                if let Some(existing_idx) = self.collections.iter().position(|c| c.name == new_col.name) {
+                if let Some(existing_idx) =
+                    self.collections.iter().position(|c| c.name == new_col.name)
+                {
                     // Update existing collection's items
                     self.collections[existing_idx].items = new_col.items;
                     // Keep env_vars as they might have been manually added/edited
@@ -239,7 +241,9 @@ impl App {
     pub fn insert_autocomplete_selection(&mut self) {
         let options = self.get_autocomplete_options();
         if let Some(selection) = options.get(self.autocomplete_index) {
-            if self.focused_panel == FocusedPanel::RequestBar && self.active_request_part == RequestBarPart::Url {
+            if self.focused_panel == FocusedPanel::RequestBar
+                && self.active_request_part == RequestBarPart::Url
+            {
                 if let Some(start_pos) = self.url[..self.cursor_position].rfind("{{") {
                     let end_text = self.url[self.cursor_position..].to_string();
                     self.url.truncate(start_pos);
@@ -250,7 +254,9 @@ impl App {
                     self.url.push_str(&end_text);
                     self.cursor_position = new_cursor;
                 }
-            } else if self.focused_panel == FocusedPanel::Details || self.focused_panel == FocusedPanel::Environments {
+            } else if self.focused_panel == FocusedPanel::Details
+                || self.focused_panel == FocusedPanel::Environments
+            {
                 let mut current_val = self.get_kv_editor_value_internal();
                 if let Some(start_pos) = current_val[..self.cursor_position].rfind("{{") {
                     let end_text = current_val[self.cursor_position..].to_string();

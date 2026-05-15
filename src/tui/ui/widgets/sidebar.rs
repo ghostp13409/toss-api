@@ -1,3 +1,7 @@
+use crate::tui::app::{App, FocusedPanel, PropertyEditorField};
+use crate::tui::ui::utils::{
+    create_block, get_method_enum_color, highlight_env_vars, title_with_key,
+};
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
@@ -5,8 +9,6 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Cell, List, ListItem, Row, Table},
 };
-use crate::tui::app::{App, FocusedPanel, PropertyEditorField};
-use crate::tui::ui::utils::{create_block, get_method_enum_color, highlight_env_vars, title_with_key};
 
 pub fn render_left_column(f: &mut Frame, app: &mut App, area: Rect) {
     let chunks = Layout::default()
@@ -134,7 +136,8 @@ pub fn render_left_bottom_panel(f: &mut Frame, app: &mut App, area: Rect) {
                             } else {
                                 Style::default()
                             };
-                            ListItem::new(format!("{}{} {} {}", indent, icon, "📁", item.name)).style(style)
+                            ListItem::new(format!("{}{} {} {}", indent, icon, "📁", item.name))
+                                .style(style)
                         }
                         crate::tui::app::VisibleItemType::Request { method, .. } => {
                             let color = get_method_enum_color(*method);
@@ -161,15 +164,19 @@ pub fn render_left_bottom_panel(f: &mut Frame, app: &mut App, area: Rect) {
             let header = Row::new(vec![
                 Cell::from("Key").style(Style::default().add_modifier(Modifier::BOLD)),
                 Cell::from("Value").style(Style::default().add_modifier(Modifier::BOLD)),
-            ]).height(1).bottom_margin(0);
+            ])
+            .height(1)
+            .bottom_margin(0);
 
             let rows: Vec<Row> = env_vars
                 .iter()
                 .enumerate()
                 .map(|(i, item)| {
-                    let is_row_selected = app.focused_panel == FocusedPanel::Environments && i == app.selected_env_index;
-                    
-                    let is_editing_this_value = app.input_mode == crate::tui::app::InputMode::Editing
+                    let is_row_selected = app.focused_panel == FocusedPanel::Environments
+                        && i == app.selected_env_index;
+
+                    let is_editing_this_value = app.input_mode
+                        == crate::tui::app::InputMode::Editing
                         && app.focused_panel == FocusedPanel::Environments
                         && i == app.selected_env_index
                         && app.property_editor_field == crate::tui::app::PropertyEditorField::Value;
@@ -199,11 +206,15 @@ pub fn render_left_bottom_panel(f: &mut Frame, app: &mut App, area: Rect) {
                 })
                 .collect();
 
-            let table = Table::new(rows, [Constraint::Percentage(40), Constraint::Percentage(60)])
-                .header(header)
-                .block(block);
-            
-            app.environments_table_state.select(Some(app.selected_env_index));
+            let table = Table::new(
+                rows,
+                [Constraint::Percentage(40), Constraint::Percentage(60)],
+            )
+            .header(header)
+            .block(block);
+
+            app.environments_table_state
+                .select(Some(app.selected_env_index));
             f.render_stateful_widget(table, area, &mut app.environments_table_state);
         }
     }

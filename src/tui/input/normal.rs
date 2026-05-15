@@ -74,13 +74,15 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
         KeyCode::Char('G') => {
             match app.focused_panel {
                 FocusedPanel::Collections => {
-                    app.selected_collection_index = app.get_visible_collections().len().saturating_sub(1)
+                    app.selected_collection_index =
+                        app.get_visible_collections().len().saturating_sub(1)
                 }
                 FocusedPanel::Apis => {
                     app.selected_api_index = app.get_visible_items().len().saturating_sub(1)
                 }
                 FocusedPanel::Environments => {
-                    app.selected_env_index = app.get_active_collection_env_vars().len().saturating_sub(1)
+                    app.selected_env_index =
+                        app.get_active_collection_env_vars().len().saturating_sub(1)
                 }
                 FocusedPanel::Details => {
                     if let Some(req) = app.get_current_request() {
@@ -119,7 +121,8 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
         KeyCode::Char('u') if key.modifiers.contains(KeyModifiers::CONTROL) => {
             match app.focused_panel {
                 FocusedPanel::Collections => {
-                    app.selected_collection_index = app.selected_collection_index.saturating_sub(10);
+                    app.selected_collection_index =
+                        app.selected_collection_index.saturating_sub(10);
                 }
                 FocusedPanel::Apis => {
                     app.selected_api_index = app.selected_api_index.saturating_sub(10);
@@ -313,7 +316,8 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                             app.current_request_id = Some(id.clone());
                             app.method = *method;
                             let id_clone = id.clone();
-                            if let Some(col) = app.collections.get_mut(app.active_collection_index) {
+                            if let Some(col) = app.collections.get_mut(app.active_collection_index)
+                            {
                                 if let Some(req) = col.find_request_mut(&id_clone) {
                                     app.url = req.url.clone();
                                 }

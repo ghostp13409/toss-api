@@ -1,7 +1,7 @@
+use super::enums::*;
 use crate::cli::args::Method;
 use crate::core::collection::Collection;
 use ratatui::widgets::{ListState, TableState};
-use super::enums::*;
 
 pub struct App {
     pub input_mode: InputMode,

@@ -52,7 +52,11 @@ pub fn detect_framework(path: &Path) -> Framework {
         || path.join("build.gradle").exists()
         || path.join("build.gradle.kts").exists()
     {
-        if let Ok(content) = std::fs::read_to_string(path.join(if path.join("pom.xml").exists() { "pom.xml" } else { "build.gradle" })) {
+        if let Ok(content) = std::fs::read_to_string(path.join(if path.join("pom.xml").exists() {
+            "pom.xml"
+        } else {
+            "build.gradle"
+        })) {
             if content.contains("quarkus") {
                 return Framework::Quarkus;
             }
@@ -96,7 +100,11 @@ pub fn discover_projects(root: &Path) -> Vec<(PathBuf, Framework)> {
         .into_iter()
         .filter_entry(|e| {
             let name = e.file_name().to_string_lossy();
-            name != "node_modules" && name != "target" && name != ".git" && name != "venv" && name != ".venv"
+            name != "node_modules"
+                && name != "target"
+                && name != ".git"
+                && name != "venv"
+                && name != ".venv"
         })
         .filter_map(|e| e.ok());
 

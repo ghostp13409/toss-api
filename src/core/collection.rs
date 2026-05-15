@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::cli::args::Method;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Collection {
@@ -39,17 +39,33 @@ pub struct KVParam {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Auth {
     None,
-    Bearer { token: String },
-    Basic { username: String, password: String },
-    ApiKey { key: String, value: String, in_header: bool },
+    Bearer {
+        token: String,
+    },
+    Basic {
+        username: String,
+        password: String,
+    },
+    ApiKey {
+        key: String,
+        value: String,
+        in_header: bool,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum RequestBody {
     None,
-    Raw { content: String, content_type: String },
-    FormData { items: Vec<KVParam> },
-    XWwwFormUrlEncoded { items: Vec<KVParam> },
+    Raw {
+        content: String,
+        content_type: String,
+    },
+    FormData {
+        items: Vec<KVParam>,
+    },
+    XWwwFormUrlEncoded {
+        items: Vec<KVParam>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -104,13 +120,22 @@ impl Collection {
         None
     }
 
-    pub fn replace_urls_with_placeholder(&mut self, base_url: &str, placeholder: &str) -> Vec<(String, String)> {
+    pub fn replace_urls_with_placeholder(
+        &mut self,
+        base_url: &str,
+        placeholder: &str,
+    ) -> Vec<(String, String)> {
         let mut changed_ids = Vec::new();
         Self::recursive_replace(&mut self.items, base_url, placeholder, &mut changed_ids);
         changed_ids
     }
 
-    fn recursive_replace(items: &mut [CollectionItem], base_url: &str, placeholder: &str, changed: &mut Vec<(String, String)>) {
+    fn recursive_replace(
+        items: &mut [CollectionItem],
+        base_url: &str,
+        placeholder: &str,
+        changed: &mut Vec<(String, String)>,
+    ) {
         for item in items {
             match item {
                 CollectionItem::Request(r) => {

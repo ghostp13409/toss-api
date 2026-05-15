@@ -3,11 +3,11 @@
 ### Documentaiton
 
 **Update the README**:
-- [ ] installation guide
-- [ ] Quickstart guide
-- [ ] Feature list
-- [ ] Donate Links
-- [ ] Shortcuts for other docs
+- [x] installation guide
+- [x] Quickstart guide
+- [x] Feature list
+- [x] Donate Links
+- [x] Shortcuts for other docs
 
 **Create KeyBindings Documentation**:
 - [ ] General Navigation

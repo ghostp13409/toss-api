@@ -1,7 +1,9 @@
 use crate::cli::args::Method;
-use crate::core::collection::{Auth, Collection, CollectionItem, Folder, KVParam, Request, RequestBody};
-use crate::core::parser::models::{FieldType, Model, ModelField, ModelRegistry};
+use crate::core::collection::{
+    Auth, Collection, CollectionItem, Folder, KVParam, Request, RequestBody,
+};
 use crate::core::parser::SourceParser;
+use crate::core::parser::models::{FieldType, Model, ModelField, ModelRegistry};
 use regex::Regex;
 use std::path::Path;
 use walkdir::WalkDir;
@@ -52,20 +54,21 @@ impl SourceParser for ExpressParser {
         let mut registry = ModelRegistry::new();
 
         // Pass 1: Model Discovery (Interfaces and Types)
-        let interface_regex = Regex::new(r"(?m)^(?:export\s+)?(?:interface|type)\s+([a-zA-Z0-9_]+)\s*(?:=)?\s*\{").unwrap();
+        let interface_regex =
+            Regex::new(r"(?m)^(?:export\s+)?(?:interface|type)\s+([a-zA-Z0-9_]+)\s*(?:=)?\s*\{")
+                .unwrap();
         let field_regex = Regex::new(r"^\s*([a-zA-Z0-9_]+)\s*\??\s*:\s*([^;,\n]+)").unwrap();
 
         for entry in WalkDir::new(project_path)
             .into_iter()
             .filter_map(|e| e.ok())
-            .filter(|e| {
-                e.path()
-                    .extension()
-                    .map_or(false, |ext| ext == "ts")
-            })
+            .filter(|e| e.path().extension().map_or(false, |ext| ext == "ts"))
         {
             let path_str = entry.path().to_string_lossy();
-            if path_str.contains("node_modules") || path_str.contains("dist") || path_str.contains(".next") {
+            if path_str.contains("node_modules")
+                || path_str.contains("dist")
+                || path_str.contains(".next")
+            {
                 continue;
             }
 
@@ -86,10 +89,7 @@ impl SourceParser for ExpressParser {
                             }
                             i += 1;
                         }
-                        registry.add_model(Model {
-                            name,
-                            fields,
-                        });
+                        registry.add_model(Model { name, fields });
                     } else {
                         i += 1;
                     }
@@ -139,12 +139,13 @@ impl SourceParser for ExpressParser {
                     // Try to extract body type from Request<..., ReqBody>
                     let start_pos = cap.get(0).unwrap().start();
                     let end_pos = cap.get(0).unwrap().end();
-                    
+
                     let slice_start = if start_pos > 100 { start_pos - 100 } else { 0 };
                     let slice_end = std::cmp::min(content.len(), end_pos + 100);
                     let search_area = &content[slice_start..slice_end];
-                    
-                    let req_type_regex = Regex::new(r"Request\s*<[^,]+,\s*[^,]+,\s*([a-zA-Z0-9_]+)>").unwrap();
+
+                    let req_type_regex =
+                        Regex::new(r"Request\s*<[^,]+,\s*[^,]+,\s*([a-zA-Z0-9_]+)>").unwrap();
                     if let Some(tcap) = req_type_regex.captures(search_area) {
                         let body_type = &tcap[1];
                         if let Some(json_body) = registry.generate_json(body_type) {

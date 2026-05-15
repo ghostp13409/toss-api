@@ -73,7 +73,7 @@
     - [ ] Performance metrics
 
 ## Advanced Imports
-
+- [x] Model paring
 - [ ] **Frameworks**
   - [x] Spring
   - [x] ASP.NET

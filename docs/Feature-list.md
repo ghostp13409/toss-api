@@ -116,3 +116,5 @@ Toss can import APIs straight from your project controllers or routes. It should
 ## Snippets
 - Snippets can be used to quickly insert most commonly used inputs into relevent fields
 - Some of the good examples of where snippets could be useful are adding localhost url, http headers, http/https request methods, and commonly used paths from other requests in collection.
+
+currently, the project parser only parses the urls. but i want to add more funtionality to it. for post, put patch methods, if the method contains an object defined within the project, it should make a body oject for it in raw-json format. plan it and then implement it.

@@ -5,7 +5,9 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph},
 };
 
-use crate::tui::app::{App, FocusedPanel, InputMode, PropertyEditorField, PropertyTab, RequestBarPart};
+use crate::tui::app::{
+    App, FocusedPanel, InputMode, PropertyEditorField, PropertyTab, RequestBarPart,
+};
 use crate::tui::ui::utils::{centered_rect, title_with_key};
 
 pub mod syntax;
@@ -107,7 +109,9 @@ fn render_cursor(f: &mut Frame, app: &mut App, chunks: &[Rect], columns: &[Rect]
                     ])
                     .split(block.inner(area));
 
-                let cursor_x = app.url[..app.cursor_position.min(app.url.len())].chars().count() as u16;
+                let cursor_x = app.url[..app.cursor_position.min(app.url.len())]
+                    .chars()
+                    .count() as u16;
                 let cursor_pos = (layout[1].x + cursor_x, layout[1].y);
                 app.last_cursor_pos = cursor_pos;
                 f.set_cursor_position(cursor_pos);
@@ -152,7 +156,9 @@ fn render_cursor(f: &mut Frame, app: &mut App, chunks: &[Rect], columns: &[Rect]
                     };
 
                     let current_val = app.get_kv_editor_value();
-                    let cursor_x = current_val[..app.cursor_position.min(current_val.len())].chars().count() as u16;
+                    let cursor_x = current_val[..app.cursor_position.min(current_val.len())]
+                        .chars()
+                        .count() as u16;
                     let cursor_pos = (x + offset + cursor_x, y);
                     app.last_cursor_pos = cursor_pos;
                     f.set_cursor_position(cursor_pos);
@@ -175,7 +181,9 @@ fn render_cursor(f: &mut Frame, app: &mut App, chunks: &[Rect], columns: &[Rect]
                     _ => 0,
                 };
                 let current_val = app.get_env_editor_value();
-                let cursor_x = current_val[..app.cursor_position.min(current_val.len())].chars().count() as u16;
+                let cursor_x = current_val[..app.cursor_position.min(current_val.len())]
+                    .chars()
+                    .count() as u16;
                 let cursor_pos = (x + offset + cursor_x, y);
                 app.last_cursor_pos = cursor_pos;
                 f.set_cursor_position(cursor_pos);
@@ -183,7 +191,9 @@ fn render_cursor(f: &mut Frame, app: &mut App, chunks: &[Rect], columns: &[Rect]
         }
         InputMode::Rename | InputMode::CreateItem => {
             let area = centered_rect(40, 10, f.area());
-            let cursor_x = app.rename_input[..app.cursor_position.min(app.rename_input.len())].chars().count() as u16;
+            let cursor_x = app.rename_input[..app.cursor_position.min(app.rename_input.len())]
+                .chars()
+                .count() as u16;
             f.set_cursor_position((area.x + 1 + cursor_x, area.y + 1));
         }
         InputMode::Search if app.show_search => {
@@ -193,11 +203,15 @@ fn render_cursor(f: &mut Frame, app: &mut App, chunks: &[Rect], columns: &[Rect]
                 .constraints([Constraint::Min(0), Constraint::Length(3)])
                 .split(sidebar_area);
             let area = chunks[1];
-            let cursor_x = app.search_query[..app.cursor_position.min(app.search_query.len())].chars().count() as u16;
+            let cursor_x = app.search_query[..app.cursor_position.min(app.search_query.len())]
+                .chars()
+                .count() as u16;
             f.set_cursor_position((area.x + 1 + cursor_x, area.y + 1));
         }
         InputMode::Command => {
-            let cursor_x = app.command_input[..app.cursor_position.min(app.command_input.len())].chars().count() as u16;
+            let cursor_x = app.command_input[..app.cursor_position.min(app.command_input.len())]
+                .chars()
+                .count() as u16;
             f.set_cursor_position((
                 chunks[2].x + 1 + cursor_x + 1, // +1 for ':'
                 chunks[2].y,
@@ -206,7 +220,10 @@ fn render_cursor(f: &mut Frame, app: &mut App, chunks: &[Rect], columns: &[Rect]
         _ => {
             if app.show_method_search {
                 let area = centered_rect(20, 30, f.area());
-                let cursor_x = app.method_search_query[..app.cursor_position.min(app.method_search_query.len())].chars().count() as u16;
+                let cursor_x = app.method_search_query
+                    [..app.cursor_position.min(app.method_search_query.len())]
+                    .chars()
+                    .count() as u16;
                 f.set_cursor_position((area.x + 1 + cursor_x, area.y + 1));
             }
         }

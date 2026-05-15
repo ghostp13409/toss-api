@@ -1,5 +1,7 @@
 use crate::cli::args::Method;
-use crate::core::collection::{Auth, Collection, CollectionItem, Folder, KVParam, Request, RequestBody};
+use crate::core::collection::{
+    Auth, Collection, CollectionItem, Folder, KVParam, Request, RequestBody,
+};
 use crate::core::parser::SourceParser;
 use regex::Regex;
 use std::path::Path;

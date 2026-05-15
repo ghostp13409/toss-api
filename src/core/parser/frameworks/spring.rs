@@ -1,7 +1,9 @@
 use crate::cli::args::Method;
-use crate::core::collection::{Auth, Collection, CollectionItem, Folder, KVParam, Request, RequestBody};
-use crate::core::parser::models::{FieldType, Model, ModelField, ModelRegistry};
+use crate::core::collection::{
+    Auth, Collection, CollectionItem, Folder, KVParam, Request, RequestBody,
+};
 use crate::core::parser::SourceParser;
+use crate::core::parser::models::{FieldType, Model, ModelField, ModelRegistry};
 use regex::Regex;
 use std::path::Path;
 use walkdir::WalkDir;
@@ -47,13 +49,21 @@ impl SourceParser for SpringParser {
         let mut registry = ModelRegistry::new();
 
         // Pass 1: Model Discovery (DTOs and Entities)
-        let class_regex = Regex::new(r"(?m)^(?:public\s+)?(?:class|record)\s+([a-zA-Z0-9_]+)").unwrap();
-        let field_regex = Regex::new(r"^\s+(?:private|public|protected)?\s+([a-zA-Z0-9_<>\?]+)\s+([a-zA-Z0-9_]+)\s*(?:;|=)").unwrap();
+        let class_regex =
+            Regex::new(r"(?m)^(?:public\s+)?(?:class|record)\s+([a-zA-Z0-9_]+)").unwrap();
+        let field_regex = Regex::new(
+            r"^\s+(?:private|public|protected)?\s+([a-zA-Z0-9_<>\?]+)\s+([a-zA-Z0-9_]+)\s*(?:;|=)",
+        )
+        .unwrap();
 
         for entry in WalkDir::new(project_path)
             .into_iter()
             .filter_map(|e| e.ok())
-            .filter(|e| e.path().extension().map_or(false, |ext| ext == "java" || ext == "kt"))
+            .filter(|e| {
+                e.path()
+                    .extension()
+                    .map_or(false, |ext| ext == "java" || ext == "kt")
+            })
         {
             let path_str = entry.path().to_string_lossy();
             if path_str.contains("target") || path_str.contains(".git") {
@@ -68,27 +78,28 @@ impl SourceParser for SpringParser {
                         let name = cap[1].to_string();
                         let mut fields = Vec::new();
                         i += 1;
-                        let mut brace_count = if lines[i-1].contains('{') { 1 } else { 0 };
+                        let mut brace_count = if lines[i - 1].contains('{') { 1 } else { 0 };
                         while i < lines.len() {
-                            if lines[i].contains('{') { brace_count += 1; }
-                            if lines[i].contains('}') { brace_count -= 1; }
-                            
+                            if lines[i].contains('{') {
+                                brace_count += 1;
+                            }
+                            if lines[i].contains('}') {
+                                brace_count -= 1;
+                            }
+
                             if let Some(fcap) = field_regex.captures(lines[i]) {
                                 fields.push(ModelField {
                                     name: fcap[2].to_string(),
                                     field_type: Self::parse_java_type(&fcap[1]),
                                 });
                             }
-                            
+
                             if brace_count == 0 && lines[i].contains('}') {
                                 break;
                             }
                             i += 1;
                         }
-                        registry.add_model(Model {
-                            name,
-                            fields,
-                        });
+                        registry.add_model(Model { name, fields });
                     } else {
                         i += 1;
                     }
@@ -109,12 +120,17 @@ impl SourceParser for SpringParser {
         )
         .unwrap();
 
-        let request_body_regex = Regex::new(r"@RequestBody\s+([a-zA-Z0-9_<>]+)\s+([a-zA-Z0-9_]+)").unwrap();
+        let request_body_regex =
+            Regex::new(r"@RequestBody\s+([a-zA-Z0-9_<>]+)\s+([a-zA-Z0-9_]+)").unwrap();
 
         for entry in WalkDir::new(project_path)
             .into_iter()
             .filter_map(|e| e.ok())
-            .filter(|e| e.path().extension().map_or(false, |ext| ext == "java" || ext == "kt"))
+            .filter(|e| {
+                e.path()
+                    .extension()
+                    .map_or(false, |ext| ext == "java" || ext == "kt")
+            })
         {
             let path_str = entry.path().to_string_lossy();
             if path_str.contains("target") || path_str.contains(".git") {
@@ -126,10 +142,11 @@ impl SourceParser for SpringParser {
                 if content.contains("@FeignClient") {
                     continue;
                 }
-                
-                if !content.contains("@RestController") && 
-                   !content.contains("@Controller") && 
-                   !content.contains("@RequestMapping") {
+
+                if !content.contains("@RestController")
+                    && !content.contains("@Controller")
+                    && !content.contains("@RequestMapping")
+                {
                     continue;
                 }
 

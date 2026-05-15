@@ -74,7 +74,11 @@ pub async fn run_cli(command: Commands) -> Result<(), Box<dyn std::error::Error>
                 }
                 println!("{}", "Your Collections:".with(Color::Yellow).bold());
                 for (i, col) in collections.iter().enumerate() {
-                    println!("  {}. {}", (i + 1).to_string().with(Color::DarkGrey), col.name);
+                    println!(
+                        "  {}. {}",
+                        (i + 1).to_string().with(Color::DarkGrey),
+                        col.name
+                    );
                 }
             }
             CollectionsCommands::Show { name } => {
@@ -105,9 +109,12 @@ pub async fn run_cli(command: Commands) -> Result<(), Box<dyn std::error::Error>
                 .find(|c| c.name == collection)
                 .ok_or_else(|| format!("Collection '{}' not found", collection))?;
 
-            let req = col
-                .find_request_by_name(&request)
-                .ok_or_else(|| format!("Request '{}' not found in collection '{}'", request, collection))?;
+            let req = col.find_request_by_name(&request).ok_or_else(|| {
+                format!(
+                    "Request '{}' not found in collection '{}'",
+                    request, collection
+                )
+            })?;
 
             let mut environment = Environment::default();
             // Load collection env vars
@@ -153,7 +160,10 @@ pub async fn run_cli(command: Commands) -> Result<(), Box<dyn std::error::Error>
         Commands::Env { command } => match command {
             EnvCommands::List => {
                 let collections = persistence.load_collections()?;
-                println!("{}", "Collections with Environments:".with(Color::Yellow).bold());
+                println!(
+                    "{}",
+                    "Collections with Environments:".with(Color::Yellow).bold()
+                );
                 for col in collections {
                     if !col.env_vars.is_empty() {
                         println!("  - {} ({} variables)", col.name, col.env_vars.len());
@@ -178,7 +188,12 @@ pub async fn run_cli(command: Commands) -> Result<(), Box<dyn std::error::Error>
                     } else {
                         "[ ]".with(Color::DarkGrey)
                     };
-                    println!("  {} {}: {}", status, v.key.clone().with(Color::Yellow), v.value);
+                    println!(
+                        "  {} {}: {}",
+                        status,
+                        v.key.clone().with(Color::Yellow),
+                        v.value
+                    );
                 }
             }
         },
@@ -252,7 +267,11 @@ async fn send_request(
     };
 
     if !silent && !headers_only {
-        println!("{}: {}", "Status".bold(), status.to_string().with(status_color));
+        println!(
+            "{}: {}",
+            "Status".bold(),
+            status.to_string().with(status_color)
+        );
     }
 
     if headers_only {

@@ -1,7 +1,7 @@
-use crate::cli::args::Method;
-use crate::core::collection::{Collection, CollectionItem, Request};
 use super::super::enums::*;
 use super::super::state::{App, VisibleItem};
+use crate::cli::args::Method;
+use crate::core::collection::{Collection, CollectionItem, Request};
 
 fn matches_query(target: &str, query: &str) -> bool {
     if query.is_empty() {
@@ -535,7 +535,13 @@ impl App {
 
             if !query.is_empty() && self.focused_panel == FocusedPanel::Apis {
                 for item in items {
-                    Self::collect_filtered_items_recursive(item, 0, query, &mut visible_items, false);
+                    Self::collect_filtered_items_recursive(
+                        item,
+                        0,
+                        query,
+                        &mut visible_items,
+                        false,
+                    );
                 }
             } else {
                 for item in items {

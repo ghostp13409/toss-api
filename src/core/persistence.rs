@@ -16,7 +16,10 @@ impl PersistenceManager {
         Self { base_dir }
     }
 
-    pub fn save_collections(&self, collections: &[Collection]) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn save_collections(
+        &self,
+        collections: &[Collection],
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let mut path = self.base_dir.clone();
         path.push("collections.json");
         let content = serde_json::to_string_pretty(collections)?;

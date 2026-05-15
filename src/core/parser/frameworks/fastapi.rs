@@ -1,7 +1,9 @@
 use crate::cli::args::Method;
-use crate::core::collection::{Auth, Collection, CollectionItem, Folder, KVParam, Request, RequestBody};
-use crate::core::parser::models::{FieldType, Model, ModelField, ModelRegistry};
+use crate::core::collection::{
+    Auth, Collection, CollectionItem, Folder, KVParam, Request, RequestBody,
+};
 use crate::core::parser::SourceParser;
+use crate::core::parser::models::{FieldType, Model, ModelField, ModelRegistry};
 use regex::Regex;
 use std::path::Path;
 use walkdir::WalkDir;
@@ -57,7 +59,10 @@ impl SourceParser for FastApiParser {
             .filter(|e| e.path().extension().map_or(false, |ext| ext == "py"))
         {
             let path_str = entry.path().to_string_lossy();
-            if path_str.contains("venv") || path_str.contains("__pycache__") || path_str.contains(".git") {
+            if path_str.contains("venv")
+                || path_str.contains("__pycache__")
+                || path_str.contains(".git")
+            {
                 continue;
             }
 
@@ -69,7 +74,11 @@ impl SourceParser for FastApiParser {
                         let class_name = cap[1].to_string();
                         let mut fields = Vec::new();
                         i += 1;
-                        while i < lines.len() && (lines[i].starts_with(' ') || lines[i].starts_with('\t') || lines[i].is_empty()) {
+                        while i < lines.len()
+                            && (lines[i].starts_with(' ')
+                                || lines[i].starts_with('\t')
+                                || lines[i].is_empty())
+                        {
                             if let Some(fcap) = field_regex.captures(lines[i]) {
                                 fields.push(ModelField {
                                     name: fcap[1].to_string(),
@@ -125,7 +134,7 @@ impl SourceParser for FastApiParser {
                     };
 
                     let mut body = RequestBody::None;
-                    
+
                     // Look for the function definition immediately following the decorator
                     let start_pos = cap.get(0).unwrap().end();
                     if let Some(func_cap) = func_regex.captures(&content[start_pos..]) {

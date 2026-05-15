@@ -17,13 +17,16 @@ pub fn parse_project<P: AsRef<Path>>(path: P) -> anyhow::Result<Collection> {
     } else {
         std::env::current_dir()?.join(path)
     };
-    
+
     // First try direct detection at root
     let framework = detector::detect_framework(&abs_path);
     if framework != detector::Framework::Unknown {
         let col = parse_single_project(&abs_path, framework)?;
         if col.items.is_empty() {
-            anyhow::bail!("Found project at {:?} but no endpoints were extracted", abs_path);
+            anyhow::bail!(
+                "Found project at {:?} but no endpoints were extracted",
+                abs_path
+            );
         }
         return Ok(col);
     }
@@ -36,7 +39,8 @@ pub fn parse_project<P: AsRef<Path>>(path: P) -> anyhow::Result<Collection> {
 
     let mut master_collection = Collection::new(format!(
         "{} (Workspace)",
-        abs_path.file_name()
+        abs_path
+            .file_name()
             .map(|n| n.to_string_lossy().to_string())
             .unwrap_or_else(|| "Root".to_string())
     ));
@@ -57,7 +61,10 @@ pub fn parse_project<P: AsRef<Path>>(path: P) -> anyhow::Result<Collection> {
     }
 
     if master_collection.items.is_empty() {
-        anyhow::bail!("Found projects but no endpoints were extracted from any of them at {:?}", abs_path);
+        anyhow::bail!(
+            "Found projects but no endpoints were extracted from any of them at {:?}",
+            abs_path
+        );
     }
 
     Ok(master_collection)

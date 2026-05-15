@@ -1,8 +1,8 @@
-# toss
+# toss-api
 
 A Vim-inspired, high-performance TUI and CLI API client built with Rust and Ratatui.
 
-`toss` is designed for developers who want a fast, keyboard-driven workflow for exploring and testing APIs without leaving the terminal. It combines the visual power of an API client with the efficiency of a Vim-like interface.
+`toss-api` is designed for developers who want a fast, keyboard-driven workflow for exploring and testing APIs without leaving the terminal. It combines the visual power of an API client with the efficiency of a Vim-like interface.
 
 ---
 
@@ -42,7 +42,7 @@ cargo install --path .
 
 ## 📖 Quickstart
 
-1. **Launch the TUI**: Simply run `toss` in your terminal.
+1. **Launch the TUI**: Simply run `toss-api` in your terminal.
 2. **Import a Project**: Press `:` to enter command mode and type `:parse .` to extract APIs from the current directory.
 3. **Navigate**: Use `j/k` to move, `Enter` to select/edit, and `Tab` to switch panels.
 4. **Send a Request**: Press `Ctrl + s` or navigate to the [ Send ] button and press `Enter`.
@@ -62,10 +62,10 @@ Toss can intelligently detect and extract endpoints from the following framework
 ## 🛠️ CLI Mode
 
 For quick actions without entering the UI:
-- `toss send GET https://api.example.com/users`
-- `toss run "My Collection" "Get User"`
-- `toss collections list`
-- `toss env show "My Collection"`
+- `toss-api send GET https://api.example.com/users`
+- `toss-api run "My Collection" "Get User"`
+- `toss-api collections list`
+- `toss-api env show "My Collection"`
 
 Run `toss --help` for the full command list.
 

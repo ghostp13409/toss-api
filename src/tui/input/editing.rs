@@ -1,4 +1,6 @@
-use crate::tui::app::{App, FocusedPanel, InputMode, PropertyEditorField, PropertyTab, RequestBarPart};
+use crate::tui::app::{
+    App, FocusedPanel, InputMode, PropertyEditorField, PropertyTab, RequestBarPart,
+};
 use crossterm::event::{KeyCode, KeyEvent};
 
 pub fn handle_editing_mode(app: &mut App, key: KeyEvent) {

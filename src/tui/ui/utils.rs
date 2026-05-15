@@ -45,7 +45,9 @@ pub fn highlight_env_vars<'a>(text: &'a str) -> Line<'static> {
                 if chars[j] == '}' && chars[j + 1] == '}' {
                     spans.push(Span::styled(
                         chars[i..j + 2].iter().collect::<String>(),
-                        Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+                        Style::default()
+                            .fg(Color::Cyan)
+                            .add_modifier(Modifier::BOLD),
                     ));
                     i = j + 2;
                     start = i;

@@ -30,8 +30,10 @@ pub fn handle_autocomplete_input(app: &mut App, key: KeyEvent) {
         KeyCode::Char(c) => {
             app.autocomplete_query.push(c);
             app.autocomplete_index = 0;
-            
-            if app.focused_panel == FocusedPanel::RequestBar && app.active_request_part == RequestBarPart::Url {
+
+            if app.focused_panel == FocusedPanel::RequestBar
+                && app.active_request_part == RequestBarPart::Url
+            {
                 app.insert_char_url(c);
                 app.sync_params_from_url();
             } else if app.focused_panel == FocusedPanel::Details {
@@ -51,7 +53,9 @@ pub fn handle_autocomplete_input(app: &mut App, key: KeyEvent) {
                 app.autocomplete_index = 0;
             }
 
-            if app.focused_panel == FocusedPanel::RequestBar && app.active_request_part == RequestBarPart::Url {
+            if app.focused_panel == FocusedPanel::RequestBar
+                && app.active_request_part == RequestBarPart::Url
+            {
                 app.delete_char_url();
                 app.sync_params_from_url();
                 if app.url[..app.cursor_position].ends_with("{{") {

@@ -1,3 +1,9 @@
+use crate::core::collection::KVParam;
+use crate::tui::app::{App, FocusedPanel, PropertyEditorField, PropertyTab, RequestBarPart};
+use crate::tui::ui::syntax::{apply_env_vars, format_content, highlight_content};
+use crate::tui::ui::utils::{
+    create_block, get_method_enum_color, highlight_env_vars, title_with_key,
+};
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Margin, Rect},
@@ -5,10 +11,6 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Paragraph, Row, Table, Tabs, Wrap},
 };
-use crate::core::collection::KVParam;
-use crate::tui::app::{App, FocusedPanel, PropertyEditorField, PropertyTab, RequestBarPart};
-use crate::tui::ui::syntax::{apply_env_vars, format_content, highlight_content};
-use crate::tui::ui::utils::{create_block, get_method_enum_color, highlight_env_vars, title_with_key};
 
 pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
     let chunks = Layout::default()
@@ -56,13 +58,25 @@ pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
 
     if let Some(status) = &app.response_status {
         let style = if status.contains("200") || status.starts_with('2') {
-            Style::default().bg(Color::Green).fg(Color::Black).add_modifier(Modifier::BOLD)
+            Style::default()
+                .bg(Color::Green)
+                .fg(Color::Black)
+                .add_modifier(Modifier::BOLD)
         } else if status.starts_with('3') {
-            Style::default().bg(Color::Cyan).fg(Color::Black).add_modifier(Modifier::BOLD)
+            Style::default()
+                .bg(Color::Cyan)
+                .fg(Color::Black)
+                .add_modifier(Modifier::BOLD)
         } else if status.starts_with('4') {
-            Style::default().bg(Color::Yellow).fg(Color::Black).add_modifier(Modifier::BOLD)
+            Style::default()
+                .bg(Color::Yellow)
+                .fg(Color::Black)
+                .add_modifier(Modifier::BOLD)
         } else if status.starts_with('5') || status == "ERROR" {
-            Style::default().bg(Color::Red).fg(Color::White).add_modifier(Modifier::BOLD)
+            Style::default()
+                .bg(Color::Red)
+                .fg(Color::White)
+                .add_modifier(Modifier::BOLD)
         } else {
             Style::default().add_modifier(Modifier::BOLD)
         };
@@ -349,14 +363,18 @@ pub fn render_details_area(f: &mut Frame, app: &mut App, area: Rect) {
                     );
                     f.render_widget(Paragraph::new(" No body ").block(block), area);
                 }
-                crate::core::collection::RequestBody::Raw { content, content_type } => {
+                crate::core::collection::RequestBody::Raw {
+                    content,
+                    content_type,
+                } => {
                     let block = create_block(
                         title_with_key("B", title),
                         app.focused_panel == FocusedPanel::Details,
                     );
-                    
+
                     let formatted_body = format_content(&content, Some(content_type.as_str()));
-                    let mut highlighted_body = highlight_content(&formatted_body, Some(content_type.as_str()));
+                    let mut highlighted_body =
+                        highlight_content(&formatted_body, Some(content_type.as_str()));
                     apply_env_vars(&mut highlighted_body);
 
                     let p = Paragraph::new(highlighted_body)
@@ -420,13 +438,15 @@ pub fn render_kv_editor<'a, T: Into<ratatui::text::Line<'a>>>(
 
             let check = if item.enabled { "[x]" } else { "[ ]" };
 
-                let mut cells = vec![
+            let mut cells = vec![
                 Cell::from(check),
                 Cell::from(highlight_env_vars(item.key.as_str())),
                 Cell::from(highlight_env_vars(item.value.as_str())),
             ];
             if show_description {
-                cells.push(Cell::from(highlight_env_vars(item.description.as_deref().unwrap_or(""))));
+                cells.push(Cell::from(highlight_env_vars(
+                    item.description.as_deref().unwrap_or(""),
+                )));
             }
 
             if is_row_focused {
@@ -470,6 +490,7 @@ pub fn render_kv_editor<'a, T: Into<ratatui::text::Line<'a>>>(
         .block(block)
         .row_highlight_style(Style::default().add_modifier(Modifier::BOLD));
 
-    app.details_table_state.select(Some(app.property_editor_row));
+    app.details_table_state
+        .select(Some(app.property_editor_row));
     f.render_stateful_widget(table, area, &mut app.details_table_state);
 }

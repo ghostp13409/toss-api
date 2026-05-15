@@ -140,7 +140,7 @@ where
                         let env = app.get_active_env();
                         let method = req.method.into();
                         let url = env.replace_vars(&app.url);
-                        
+
                         let mut headers = HashMap::new();
                         for h in &req.headers {
                             if h.enabled && !h.key.is_empty() {
@@ -165,9 +165,7 @@ where
                                 *content = env.replace_vars(content);
                             }
                             crate::core::collection::RequestBody::FormData { items }
-                            | crate::core::collection::RequestBody::XWwwFormUrlEncoded {
-                                items,
-                            } => {
+                            | crate::core::collection::RequestBody::XWwwFormUrlEncoded { items } => {
                                 for item in items {
                                     item.key = env.replace_vars(&item.key);
                                     item.value = env.replace_vars(&item.value);

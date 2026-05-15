@@ -1,5 +1,7 @@
 use crate::cli::args::Method;
-use crate::core::collection::{Auth, Collection, CollectionItem, Folder, KVParam, Request, RequestBody};
+use crate::core::collection::{
+    Auth, Collection, CollectionItem, Folder, KVParam, Request, RequestBody,
+};
 use crate::core::parser::SourceParser;
 use regex::Regex;
 use std::path::Path;
@@ -25,19 +27,31 @@ impl SourceParser for NextJsParser {
         });
 
         // App Router: app/api/**/route.ts|js
-        let app_router_regex = Regex::new(r#"export\s+(?:async\s+)?function\s+(GET|POST|PUT|PATCH|DELETE)"#).unwrap();
-        
+        let app_router_regex =
+            Regex::new(r#"export\s+(?:async\s+)?function\s+(GET|POST|PUT|PATCH|DELETE)"#).unwrap();
+
         let app_dir = project_path.join("app");
         if app_dir.exists() {
             for entry in WalkDir::new(app_dir)
                 .into_iter()
                 .filter_map(|e| e.ok())
-                .filter(|e| e.path().file_name().map_or(false, |name| name == "route.ts" || name == "route.js"))
+                .filter(|e| {
+                    e.path()
+                        .file_name()
+                        .map_or(false, |name| name == "route.ts" || name == "route.js")
+                })
             {
                 if let Ok(content) = std::fs::read_to_string(entry.path()) {
                     let mut requests = Vec::new();
-                    let relative_path = entry.path().strip_prefix(project_path).unwrap_or(entry.path());
-                    let url_path = relative_path.parent().unwrap_or(Path::new("")).to_string_lossy().to_string();
+                    let relative_path = entry
+                        .path()
+                        .strip_prefix(project_path)
+                        .unwrap_or(entry.path());
+                    let url_path = relative_path
+                        .parent()
+                        .unwrap_or(Path::new(""))
+                        .to_string_lossy()
+                        .to_string();
                     let url_path = url_path.replace("app", "").replace("\\", "/"); // Basic normalization
 
                     for cap in app_router_regex.captures_iter(&content) {
@@ -79,10 +93,23 @@ impl SourceParser for NextJsParser {
             for entry in WalkDir::new(pages_api_dir)
                 .into_iter()
                 .filter_map(|e| e.ok())
-                .filter(|e| e.path().extension().map_or(false, |ext| ext == "ts" || ext == "js"))
+                .filter(|e| {
+                    e.path()
+                        .extension()
+                        .map_or(false, |ext| ext == "ts" || ext == "js")
+                })
             {
-                let relative_path = entry.path().strip_prefix(project_path).unwrap_or(entry.path());
-                let url_path = format!("/{}", relative_path.with_extension("").to_string_lossy().replace("\\", "/"));
+                let relative_path = entry
+                    .path()
+                    .strip_prefix(project_path)
+                    .unwrap_or(entry.path());
+                let url_path = format!(
+                    "/{}",
+                    relative_path
+                        .with_extension("")
+                        .to_string_lossy()
+                        .replace("\\", "/")
+                );
 
                 let req = CollectionItem::Request(Request {
                     id: uuid::Uuid::new_v4().to_string(),
@@ -97,7 +124,14 @@ impl SourceParser for NextJsParser {
                     post_response_script: None,
                 });
 
-                let mut folder = Folder::new(entry.path().file_name().unwrap_or_default().to_string_lossy().to_string());
+                let mut folder = Folder::new(
+                    entry
+                        .path()
+                        .file_name()
+                        .unwrap_or_default()
+                        .to_string_lossy()
+                        .to_string(),
+                );
                 folder.items = vec![req];
                 collection.items.push(CollectionItem::Folder(folder));
             }

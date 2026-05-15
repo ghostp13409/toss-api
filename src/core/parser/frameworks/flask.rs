@@ -1,7 +1,9 @@
 use crate::cli::args::Method;
-use crate::core::collection::{Auth, Collection, CollectionItem, Folder, KVParam, Request, RequestBody};
-use crate::core::parser::models::{FieldType, Model, ModelField, ModelRegistry};
+use crate::core::collection::{
+    Auth, Collection, CollectionItem, Folder, KVParam, Request, RequestBody,
+};
 use crate::core::parser::SourceParser;
+use crate::core::parser::models::{FieldType, Model, ModelField, ModelRegistry};
 use regex::Regex;
 use std::path::Path;
 use walkdir::WalkDir;
@@ -63,7 +65,11 @@ impl SourceParser for FlaskParser {
                         let name = cap[1].to_string();
                         let mut fields = Vec::new();
                         i += 1;
-                        while i < lines.len() && (lines[i].starts_with(' ') || lines[i].starts_with('\t') || lines[i].is_empty()) {
+                        while i < lines.len()
+                            && (lines[i].starts_with(' ')
+                                || lines[i].starts_with('\t')
+                                || lines[i].is_empty())
+                        {
                             if let Some(fcap) = field_regex.captures(lines[i]) {
                                 fields.push(ModelField {
                                     name: fcap[1].to_string(),
@@ -72,10 +78,7 @@ impl SourceParser for FlaskParser {
                             }
                             i += 1;
                         }
-                        registry.add_model(Model {
-                            name,
-                            fields,
-                        });
+                        registry.add_model(Model { name, fields });
                     } else {
                         i += 1;
                     }
@@ -101,7 +104,10 @@ impl SourceParser for FlaskParser {
                     let methods_str = cap.get(2).map_or("GET", |m| m.as_str());
 
                     let methods = if methods_str.contains(',') {
-                        methods_str.split(',').map(|s| s.trim().trim_matches('\'').trim_matches('"')).collect::<Vec<_>>()
+                        methods_str
+                            .split(',')
+                            .map(|s| s.trim().trim_matches('\'').trim_matches('"'))
+                            .collect::<Vec<_>>()
                     } else {
                         vec![methods_str.trim().trim_matches('\'').trim_matches('"')]
                     };
@@ -116,15 +122,21 @@ impl SourceParser for FlaskParser {
                         };
 
                         let mut body = RequestBody::None;
-                        if method == Method::Post || method == Method::Put || method == Method::Patch {
+                        if method == Method::Post
+                            || method == Method::Put
+                            || method == Method::Patch
+                        {
                             let pos = cap.get(0).unwrap().end();
                             let slice_end = std::cmp::min(content.len(), pos + 1000);
                             if let Some(jcap) = json_load_regex.captures(&content[pos..slice_end]) {
                                 let var_name = &jcap[1];
                                 // Check if variable name matches a model (heuristic)
                                 for model_name in registry.models.keys() {
-                                    if var_name.to_lowercase().contains(&model_name.to_lowercase()) || model_name.to_lowercase().contains(var_name) {
-                                        if let Some(json_body) = registry.generate_json(model_name) {
+                                    if var_name.to_lowercase().contains(&model_name.to_lowercase())
+                                        || model_name.to_lowercase().contains(var_name)
+                                    {
+                                        if let Some(json_body) = registry.generate_json(model_name)
+                                        {
                                             body = RequestBody::Raw {
                                                 content: json_body,
                                                 content_type: "application/json".to_string(),
@@ -152,7 +164,12 @@ impl SourceParser for FlaskParser {
                 }
 
                 if !requests.is_empty() {
-                    let file_name = entry.path().file_name().unwrap_or_default().to_string_lossy().to_string();
+                    let file_name = entry
+                        .path()
+                        .file_name()
+                        .unwrap_or_default()
+                        .to_string_lossy()
+                        .to_string();
                     let mut folder = Folder::new(file_name);
                     folder.items = requests;
                     collection.items.push(CollectionItem::Folder(folder));

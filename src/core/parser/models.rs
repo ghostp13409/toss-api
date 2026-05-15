@@ -1,5 +1,5 @@
+use serde_json::{Value, json};
 use std::collections::HashMap;
-use serde_json::{json, Value};
 
 #[derive(Debug, Clone)]
 pub enum FieldType {
@@ -54,7 +54,10 @@ impl ModelRegistry {
         let mut obj = serde_json::Map::new();
 
         for field in &model.fields {
-            obj.insert(field.name.clone(), self.generate_field_value(&field.field_type, stack));
+            obj.insert(
+                field.name.clone(),
+                self.generate_field_value(&field.field_type, stack),
+            );
         }
 
         stack.pop();
@@ -67,9 +70,7 @@ impl ModelRegistry {
             FieldType::Number => json!(0),
             FieldType::Boolean => json!(true),
             FieldType::Array(inner) => json!([self.generate_field_value(inner, stack)]),
-            FieldType::Object(name) => {
-                self.generate_value(name, stack).unwrap_or(json!({}))
-            }
+            FieldType::Object(name) => self.generate_value(name, stack).unwrap_or(json!({})),
             FieldType::Unknown => json!(null),
         }
     }

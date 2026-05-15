@@ -1,7 +1,7 @@
-use crate::core::collection::{Auth, KVParam, Request, RequestBody};
-use reqwest::Url;
 use super::super::enums::*;
 use super::super::state::App;
+use crate::core::collection::{Auth, KVParam, Request, RequestBody};
+use reqwest::Url;
 
 impl App {
     pub fn add_env_var(&mut self) {
@@ -67,11 +67,14 @@ impl App {
                         .append_pair(&param.key, &param.value);
                 }
             }
-            
+
             let mut new_url = parsed_url.to_string();
             // If we added a dummy scheme, strip it back
             if !has_scheme {
-                new_url = new_url.strip_prefix("http://").unwrap_or(&new_url).to_string();
+                new_url = new_url
+                    .strip_prefix("http://")
+                    .unwrap_or(&new_url)
+                    .to_string();
             }
 
             self.url = new_url.clone();
@@ -393,9 +396,7 @@ impl App {
                 return match self.property_editor_field {
                     PropertyEditorField::Key => var.key.clone(),
                     PropertyEditorField::Value => var.value.clone(),
-                    PropertyEditorField::Description => {
-                        var.description.clone().unwrap_or_default()
-                    }
+                    PropertyEditorField::Description => var.description.clone().unwrap_or_default(),
                 };
             }
         }

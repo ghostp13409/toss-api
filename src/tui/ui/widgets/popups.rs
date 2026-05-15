@@ -1,3 +1,5 @@
+use crate::tui::app::{App, FocusedPanel, PendingItemType};
+use crate::tui::ui::utils::{centered_rect, get_method_color};
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
@@ -5,8 +7,6 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Wrap},
 };
-use crate::tui::app::{App, FocusedPanel, PendingItemType};
-use crate::tui::ui::utils::{centered_rect, get_method_color};
 
 pub fn render_error_popup(f: &mut Frame, error: &str) {
     let area = centered_rect(60, 20, f.area());
@@ -123,49 +123,155 @@ pub fn render_help_popup(f: &mut Frame, _app: &App) {
     let block = Block::default()
         .title(" Help / Shortcuts ")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD));
+        .border_style(
+            Style::default()
+                .fg(Color::Magenta)
+                .add_modifier(Modifier::BOLD),
+        );
 
     let help_text = vec![
-        Line::from(vec![Span::styled(" Global Shortcuts ", Style::default().add_modifier(Modifier::BOLD).fg(Color::Yellow))]),
-        Line::from(vec![Span::styled("  q             ", Style::default().fg(Color::Cyan)), Span::raw(": Quit application")]),
-        Line::from(vec![Span::styled("  ?             ", Style::default().fg(Color::Cyan)), Span::raw(": Toggle this help menu")]),
-        Line::from(vec![Span::styled("  Tab           ", Style::default().fg(Color::Cyan)), Span::raw(": Next panel")]),
-        Line::from(vec![Span::styled("  S-Tab         ", Style::default().fg(Color::Cyan)), Span::raw(": Previous panel")]),
-        Line::from(vec![Span::styled("  :             ", Style::default().fg(Color::Cyan)), Span::raw(": Enter command mode")]),
-        Line::from(vec![Span::styled("  Ctrl + s/Enter", Style::default().fg(Color::Cyan)), Span::raw(": Send request")]),
+        Line::from(vec![Span::styled(
+            " Global Shortcuts ",
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(Color::Yellow),
+        )]),
+        Line::from(vec![
+            Span::styled("  q             ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Quit application"),
+        ]),
+        Line::from(vec![
+            Span::styled("  ?             ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Toggle this help menu"),
+        ]),
+        Line::from(vec![
+            Span::styled("  Tab           ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Next panel"),
+        ]),
+        Line::from(vec![
+            Span::styled("  S-Tab         ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Previous panel"),
+        ]),
+        Line::from(vec![
+            Span::styled("  :             ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Enter command mode"),
+        ]),
+        Line::from(vec![
+            Span::styled("  Ctrl + s/Enter", Style::default().fg(Color::Cyan)),
+            Span::raw(": Send request"),
+        ]),
         Line::from(vec![Span::raw("")]),
-
-        Line::from(vec![Span::styled(" Navigation ", Style::default().add_modifier(Modifier::BOLD).fg(Color::Yellow))]),
-        Line::from(vec![Span::styled("  j / k     ", Style::default().fg(Color::Cyan)), Span::raw(": Move down / up")]),
-        Line::from(vec![Span::styled("  h / l     ", Style::default().fg(Color::Cyan)), Span::raw(": Move left / right (or back / drill down)")]),
-        Line::from(vec![Span::styled("  Enter     ", Style::default().fg(Color::Cyan)), Span::raw(": Select / Drill down / Edit")]),
-        Line::from(vec![Span::styled("  Esc       ", Style::default().fg(Color::Cyan)), Span::raw(": Back / Cancel")]),
-        Line::from(vec![Span::styled("  gg / G    ", Style::default().fg(Color::Cyan)), Span::raw(": Top / Bottom")]),
-        Line::from(vec![Span::styled("  C-u / C-d ", Style::default().fg(Color::Cyan)), Span::raw(": Page up / down")]),
+        Line::from(vec![Span::styled(
+            " Navigation ",
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(Color::Yellow),
+        )]),
+        Line::from(vec![
+            Span::styled("  j / k     ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Move down / up"),
+        ]),
+        Line::from(vec![
+            Span::styled("  h / l     ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Move left / right (or back / drill down)"),
+        ]),
+        Line::from(vec![
+            Span::styled("  Enter     ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Select / Drill down / Edit"),
+        ]),
+        Line::from(vec![
+            Span::styled("  Esc       ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Back / Cancel"),
+        ]),
+        Line::from(vec![
+            Span::styled("  gg / G    ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Top / Bottom"),
+        ]),
+        Line::from(vec![
+            Span::styled("  C-u / C-d ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Page up / down"),
+        ]),
         Line::from(vec![Span::raw("")]),
-
-        Line::from(vec![Span::styled(" Panel Direct Access ", Style::default().add_modifier(Modifier::BOLD).fg(Color::Yellow))]),
-        Line::from(vec![Span::styled("  C / R / E ", Style::default().fg(Color::Cyan)), Span::raw(": Collections / Request Bar / Response")]),
-        Line::from(vec![Span::styled("  P / H / U ", Style::default().fg(Color::Cyan)), Span::raw(": Params / Headers / Auth")]),
-        Line::from(vec![Span::styled("  B / S / T ", Style::default().fg(Color::Cyan)), Span::raw(": Body / Scripts / Stats")]),
-        Line::from(vec![Span::styled("  V / A     ", Style::default().fg(Color::Cyan)), Span::raw(": Variables (Envs) / APIs list")]),
+        Line::from(vec![Span::styled(
+            " Panel Direct Access ",
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(Color::Yellow),
+        )]),
+        Line::from(vec![
+            Span::styled("  C / R / E ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Collections / Request Bar / Response"),
+        ]),
+        Line::from(vec![
+            Span::styled("  P / H / U ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Params / Headers / Auth"),
+        ]),
+        Line::from(vec![
+            Span::styled("  B / S / T ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Body / Scripts / Stats"),
+        ]),
+        Line::from(vec![
+            Span::styled("  V / A     ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Variables (Envs) / APIs list"),
+        ]),
         Line::from(vec![Span::raw("")]),
-
-        Line::from(vec![Span::styled(" Actions ", Style::default().add_modifier(Modifier::BOLD).fg(Color::Yellow))]),
-        Line::from(vec![Span::styled("  a / f / n ", Style::default().fg(Color::Cyan)), Span::raw(": Add Request / Folder / Collection")]),
-        Line::from(vec![Span::styled("  d / r     ", Style::default().fg(Color::Cyan)), Span::raw(": Delete / Rename")]),
-        Line::from(vec![Span::styled("  Space     ", Style::default().fg(Color::Cyan)), Span::raw(": Toggle folder or KV enabled state")]),
-        Line::from(vec![Span::styled("  /         ", Style::default().fg(Color::Cyan)), Span::raw(": Filter (Collections / APIs)")]),
-        Line::from(vec![Span::styled("  e         ", Style::default().fg(Color::Cyan)), Span::raw(": Focus Request Bar (URL)")]),
-        Line::from(vec![Span::styled("  t         ", Style::default().fg(Color::Cyan)), Span::raw(": Cycle Auth / Body type (in Details)")]),
-        Line::from(vec![Span::styled("  y / p     ", Style::default().fg(Color::Cyan)), Span::raw(": Copy / Paste (Body / Response)")]),
+        Line::from(vec![Span::styled(
+            " Actions ",
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(Color::Yellow),
+        )]),
+        Line::from(vec![
+            Span::styled("  a / f / n ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Add Request / Folder / Collection"),
+        ]),
+        Line::from(vec![
+            Span::styled("  d / r     ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Delete / Rename"),
+        ]),
+        Line::from(vec![
+            Span::styled("  Space     ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Toggle folder or KV enabled state"),
+        ]),
+        Line::from(vec![
+            Span::styled("  /         ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Filter (Collections / APIs)"),
+        ]),
+        Line::from(vec![
+            Span::styled("  e         ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Focus Request Bar (URL)"),
+        ]),
+        Line::from(vec![
+            Span::styled("  t         ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Cycle Auth / Body type (in Details)"),
+        ]),
+        Line::from(vec![
+            Span::styled("  y / p     ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Copy / Paste (Body / Response)"),
+        ]),
         Line::from(vec![Span::raw("")]),
-
-        Line::from(vec![Span::styled(" Command Mode Actions ", Style::default().add_modifier(Modifier::BOLD).fg(Color::Yellow))]),
-        Line::from(vec![Span::styled("  :import <path> ", Style::default().fg(Color::Cyan)), Span::raw(": Import a Postman collection")]),
-        Line::from(vec![Span::styled("  :parse <path>  ", Style::default().fg(Color::Cyan)), Span::raw(": Parse project from path (default: . )")]),
-        Line::from(vec![Span::styled("  :env create    ", Style::default().fg(Color::Cyan)), Span::raw(": Auto-generate variables (baseUrl)")]),
-        Line::from(vec![Span::styled("  :q / :quit     ", Style::default().fg(Color::Cyan)), Span::raw(": Quit application")]),
+        Line::from(vec![Span::styled(
+            " Command Mode Actions ",
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(Color::Yellow),
+        )]),
+        Line::from(vec![
+            Span::styled("  :import <path> ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Import a Postman collection"),
+        ]),
+        Line::from(vec![
+            Span::styled("  :parse <path>  ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Parse project from path (default: . )"),
+        ]),
+        Line::from(vec![
+            Span::styled("  :env create    ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Auto-generate variables (baseUrl)"),
+        ]),
+        Line::from(vec![
+            Span::styled("  :q / :quit     ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Quit application"),
+        ]),
     ];
 
     let p = Paragraph::new(help_text)
@@ -230,7 +336,7 @@ pub fn render_autocomplete(f: &mut Frame, app: &App) {
     }
 
     let (cursor_x, cursor_y) = app.last_cursor_pos;
-    
+
     // Width of the dropdown based on longest option or query
     let width = options.iter().map(|s| s.len()).max().unwrap_or(10) as u16 + 4;
     let height = (options.len().min(8) + 2) as u16;
@@ -241,7 +347,7 @@ pub fn render_autocomplete(f: &mut Frame, app: &App) {
     } else {
         cursor_x
     };
-    
+
     let y = if cursor_y + height + 1 > f.area().height {
         // Show above cursor if no space below
         cursor_y.saturating_sub(height)

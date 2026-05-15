@@ -1,5 +1,7 @@
-use crate::core::collection::{Collection, CollectionItem, Request, Folder, KVParam, RequestBody, Auth};
 use crate::cli::args::Method;
+use crate::core::collection::{
+    Auth, Collection, CollectionItem, Folder, KVParam, Request, RequestBody,
+};
 use serde_json::Value;
 use std::fs;
 use std::path::Path;
@@ -11,8 +13,11 @@ pub fn import_postman<P: AsRef<Path>>(path: P) -> anyhow::Result<Collection> {
 
 pub fn import_postman_collection(json_str: &str) -> anyhow::Result<Collection> {
     let v: Value = serde_json::from_str(json_str)?;
-    
-    let name = v["info"]["name"].as_str().unwrap_or("Imported Collection").to_string();
+
+    let name = v["info"]["name"]
+        .as_str()
+        .unwrap_or("Imported Collection")
+        .to_string();
     let mut collection = Collection::new(name);
 
     if let Some(items) = v["item"].as_array() {
@@ -69,7 +74,10 @@ fn parse_item(item: &Value) -> Option<CollectionItem> {
             if body_val["mode"] == "raw" {
                 RequestBody::Raw {
                     content: body_val["raw"].as_str().unwrap_or("").to_string(),
-                    content_type: body_val["options"]["raw"]["language"].as_str().unwrap_or("json").to_string(),
+                    content_type: body_val["options"]["raw"]["language"]
+                        .as_str()
+                        .unwrap_or("json")
+                        .to_string(),
                 }
             } else {
                 RequestBody::None

@@ -1,7 +1,9 @@
 use crate::cli::args::Method;
-use crate::core::collection::{Auth, Collection, CollectionItem, Folder, KVParam, Request, RequestBody};
-use crate::core::parser::models::{FieldType, Model, ModelField, ModelRegistry};
+use crate::core::collection::{
+    Auth, Collection, CollectionItem, Folder, KVParam, Request, RequestBody,
+};
 use crate::core::parser::SourceParser;
+use crate::core::parser::models::{FieldType, Model, ModelField, ModelRegistry};
 use regex::Regex;
 use std::path::Path;
 use walkdir::WalkDir;
@@ -47,8 +49,12 @@ impl SourceParser for AspNetParser {
         let mut registry = ModelRegistry::new();
 
         // Pass 1: Model Discovery (Classes, Records, Structs)
-        let class_regex = Regex::new(r"(?m)^(?:public|internal)?\s+(?:class|record|struct)\s+([a-zA-Z0-9_]+)").unwrap();
-        let prop_regex = Regex::new(r"(?m)^\s+public\s+([a-zA-Z0-9_<>\[\]\?]+)\s+([a-zA-Z0-9_]+)\s*\{\s*get;").unwrap();
+        let class_regex =
+            Regex::new(r"(?m)^(?:public|internal)?\s+(?:class|record|struct)\s+([a-zA-Z0-9_]+)")
+                .unwrap();
+        let prop_regex =
+            Regex::new(r"(?m)^\s+public\s+([a-zA-Z0-9_<>\[\]\?]+)\s+([a-zA-Z0-9_]+)\s*\{\s*get;")
+                .unwrap();
 
         for entry in WalkDir::new(project_path)
             .into_iter()
@@ -63,27 +69,28 @@ impl SourceParser for AspNetParser {
                         let name = cap[1].to_string();
                         let mut fields = Vec::new();
                         i += 1;
-                        let mut brace_count = if lines[i-1].contains('{') { 1 } else { 0 };
+                        let mut brace_count = if lines[i - 1].contains('{') { 1 } else { 0 };
                         while i < lines.len() {
-                            if lines[i].contains('{') { brace_count += 1; }
-                            if lines[i].contains('}') { brace_count -= 1; }
-                            
+                            if lines[i].contains('{') {
+                                brace_count += 1;
+                            }
+                            if lines[i].contains('}') {
+                                brace_count -= 1;
+                            }
+
                             if let Some(pcap) = prop_regex.captures(lines[i]) {
                                 fields.push(ModelField {
                                     name: pcap[2].to_string(),
                                     field_type: Self::parse_cs_type(&pcap[1]),
                                 });
                             }
-                            
+
                             if brace_count == 0 && lines[i].contains('}') {
                                 break;
                             }
                             i += 1;
                         }
-                        registry.add_model(Model {
-                            name,
-                            fields,
-                        });
+                        registry.add_model(Model { name, fields });
                     } else {
                         i += 1;
                     }
@@ -93,11 +100,15 @@ impl SourceParser for AspNetParser {
 
         // Pass 2: Endpoint Extraction
         // Attributes like [HttpGet("path")] or [HttpPost("path")]
-        let attr_regex = Regex::new(r#"\[Http(Get|Post|Put|Patch|Delete)\s*(?:\(\s*["']([^"']*)["']\s*\))?\]"#).unwrap();
+        let attr_regex =
+            Regex::new(r#"\[Http(Get|Post|Put|Patch|Delete)\s*(?:\(\s*["']([^"']*)["']\s*\))?\]"#)
+                .unwrap();
         // Minimal APIs like app.MapGet("path", ...)
-        let map_regex = Regex::new(r#"app\.Map(Get|Post|Put|Patch|Delete)\s*\(\s*["']([^'"]+)['"]"#).unwrap();
-        
-        let from_body_regex = Regex::new(r"\[FromBody\]\s*([a-zA-Z0-9_<>]+)\s+([a-zA-Z0-9_]+)").unwrap();
+        let map_regex =
+            Regex::new(r#"app\.Map(Get|Post|Put|Patch|Delete)\s*\(\s*["']([^'"]+)['"]"#).unwrap();
+
+        let from_body_regex =
+            Regex::new(r"\[FromBody\]\s*([a-zA-Z0-9_<>]+)\s+([a-zA-Z0-9_]+)").unwrap();
 
         for entry in WalkDir::new(project_path)
             .into_iter()
@@ -178,7 +189,12 @@ impl SourceParser for AspNetParser {
                 }
 
                 if !requests.is_empty() {
-                    let file_name = entry.path().file_name().unwrap_or_default().to_string_lossy().to_string();
+                    let file_name = entry
+                        .path()
+                        .file_name()
+                        .unwrap_or_default()
+                        .to_string_lossy()
+                        .to_string();
                     let mut folder = Folder::new(file_name);
                     folder.items = requests;
                     collection.items.push(CollectionItem::Folder(folder));
