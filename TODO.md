@@ -17,10 +17,13 @@
 ## Phase 3: Advanced Source Code Imports (PRIORITY)
 - [x] **CLI Subcommand**: Add `toss parse <path>` subcommand.
 - [x] **Framework Detection**: Add logic to detect frameworks (Spring, Express, Django, etc.).
-- [ ] **Endpoint Extraction**: Extract HTTP methods, paths, and metadata from source files.
-    - [x] **Express.js** support added.
-    - [x] **FastAPI** support added.
-    - [ ] **Flask/Django/Spring** support pending.
+- [x] **Endpoint Extraction**: Extract HTTP methods, paths, and body metadata from source files.
+    - [x] **Express.js / Next.js** support (with TS model discovery).
+    - [x] **FastAPI / Flask** support (with Python model discovery).
+    - [x] **Spring Boot / Quarkus** support (with Java/Kotlin model discovery).
+    - [x] **ASP.NET** support (with C# model discovery).
+    - [x] **Golang** support (with struct discovery).
+    - [ ] **Django/Laravel/Rails** basic support.
 - [x] **Collection Generation**: Group endpoints into Toss Collections mirroring the project structure.
 
 ## Phase 4: Data Management, CRUD & Multi-format Imports

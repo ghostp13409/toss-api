@@ -1,5 +1,6 @@
 pub mod detector;
 pub mod frameworks;
+pub mod models;
 
 use crate::core::collection::{Collection, CollectionItem, Folder};
 use std::path::Path;
