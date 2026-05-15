@@ -213,7 +213,7 @@ fn render_cursor(f: &mut Frame, app: &mut App, chunks: &[Rect], columns: &[Rect]
                 .chars()
                 .count() as u16;
             f.set_cursor_position((
-                chunks[2].x + 1 + cursor_x + 1, // +1 for ':'
+                chunks[2].x + 11 + cursor_x, // " COMMAND :".len() = 11
                 chunks[2].y,
             ));
         }

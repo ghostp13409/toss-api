@@ -10,10 +10,25 @@ impl App {
 
     pub fn move_cursor_left(&mut self) {
         if self.cursor_position > 0 {
+            let s = match self.input_mode {
+                InputMode::Command => &self.command_input,
+                InputMode::Rename | InputMode::CreateItem => &self.rename_input,
+                InputMode::Search => &self.search_query,
+                InputMode::Editing => {
+                    if self.focused_panel == FocusedPanel::Details {
+                        &self.get_kv_editor_value()
+                    } else if self.focused_panel == FocusedPanel::Environments {
+                        &self.get_env_editor_value()
+                    } else {
+                        &self.url
+                    }
+                }
+                _ => &self.url,
+            };
             let mut new_pos = self.cursor_position;
             while new_pos > 0 {
                 new_pos -= 1;
-                if self.url.is_char_boundary(new_pos) {
+                if s.is_char_boundary(new_pos) {
                     break;
                 }
             }
@@ -23,10 +38,25 @@ impl App {
 
     pub fn move_cursor_right(&mut self, max: usize) {
         if self.cursor_position < max {
+            let s = match self.input_mode {
+                InputMode::Command => &self.command_input,
+                InputMode::Rename | InputMode::CreateItem => &self.rename_input,
+                InputMode::Search => &self.search_query,
+                InputMode::Editing => {
+                    if self.focused_panel == FocusedPanel::Details {
+                        &self.get_kv_editor_value()
+                    } else if self.focused_panel == FocusedPanel::Environments {
+                        &self.get_env_editor_value()
+                    } else {
+                        &self.url
+                    }
+                }
+                _ => &self.url,
+            };
             let mut new_pos = self.cursor_position;
             while new_pos < max {
                 new_pos += 1;
-                if self.url.is_char_boundary(new_pos) {
+                if s.is_char_boundary(new_pos) {
                     break;
                 }
             }

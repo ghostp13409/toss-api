@@ -265,16 +265,38 @@ where
 
                     is_paused.store(true, Ordering::SeqCst);
 
-                    let temp_file = format!("/tmp/toss_body_{}.txt", req_id);
-                    let _ = std::fs::write(&temp_file, current_body);
+                    let mut temp_path = std::env::temp_dir();
+                    temp_path.push(format!("toss_body_{}.json", req_id));
+                    let _ = std::fs::write(&temp_path, current_body);
 
                     let _ = disable_raw_mode();
                     let _ = execute!(std::io::stdout(), LeaveAlternateScreen);
 
-                    let editor = std::env::var("EDITOR").unwrap_or_else(|_| "vi".to_string());
-                    let _ = std::process::Command::new(editor).arg(&temp_file).status();
+                    #[cfg(unix)]
+                    {
+                        let editor = std::env::var("EDITOR")
+                            .or_else(|_| std::env::var("VISUAL"))
+                            .unwrap_or_else(|_| "vi".to_string());
+                        let _ = std::process::Command::new(editor)
+                            .arg(&temp_path)
+                            .status();
+                    }
 
-                    if let Ok(new_body) = std::fs::read_to_string(&temp_file) {
+                    #[cfg(windows)]
+                    {
+                        let editor = std::env::var("EDITOR")
+                            .or_else(|_| std::env::var("VISUAL"))
+                            .unwrap_or_else(|_| "notepad.exe".to_string());
+                        
+                        // Try default editor first, if it fails or it is notepad, try "start" for default app
+                        if editor == "notepad.exe" || std::process::Command::new(&editor).arg(&temp_path).status().is_err() {
+                             let _ = std::process::Command::new("cmd")
+                                .args(&["/C", "start", "", &temp_path.to_string_lossy()])
+                                .status();
+                        }
+                    }
+
+                    if let Ok(new_body) = std::fs::read_to_string(&temp_path) {
                         if let Some(col) = app.collections.get_mut(app.active_collection_index) {
                             if let Some(req_mut) = col.find_request_mut(&req_id) {
                                 req_mut.body = crate::core::collection::RequestBody::Raw {
@@ -284,7 +306,7 @@ where
                             }
                         }
                     }
-                    let _ = std::fs::remove_file(temp_file);
+                    let _ = std::fs::remove_file(temp_path);
 
                     let _ = execute!(std::io::stdout(), EnterAlternateScreen);
                     let _ = enable_raw_mode();
