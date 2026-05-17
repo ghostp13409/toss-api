@@ -513,16 +513,15 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                 app.rename_input.clear();
                 app.cursor_position = 0;
             } else if app.focused_panel == FocusedPanel::Details {
-                app.add_kv_param();
+                app.add_kv_param(String::new());
                 app.input_mode = InputMode::Editing;
                 app.property_editor_field = PropertyEditorField::Key;
                 app.cursor_position = 0;
             } else if app.focused_panel == FocusedPanel::Environments {
-                app.add_env_var();
+                app.add_env_var(String::new());
                 app.input_mode = InputMode::Editing;
                 app.property_editor_field = PropertyEditorField::Key;
-                let current_val = app.get_env_editor_value();
-                app.cursor_position = current_val.len();
+                app.cursor_position = 0;
             }
         }
 

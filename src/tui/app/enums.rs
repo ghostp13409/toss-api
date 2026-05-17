@@ -69,6 +69,8 @@ pub enum PendingItemType {
     Collection,
     Folder,
     Request,
+    KVParam,
+    EnvVar,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]

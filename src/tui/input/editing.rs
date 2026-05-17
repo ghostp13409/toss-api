@@ -6,6 +6,22 @@ use crossterm::event::{KeyCode, KeyEvent};
 pub fn handle_editing_mode(app: &mut App, key: KeyEvent) {
     match key.code {
         KeyCode::Esc => {
+            if app.focused_panel == FocusedPanel::Details {
+                let current_val = app.get_kv_editor_value();
+                if current_val.trim().is_empty() {
+                    app.delete_kv_param();
+                    app.input_mode = InputMode::Normal;
+                    return;
+                }
+            } else if app.focused_panel == FocusedPanel::Environments {
+                let current_val = app.get_env_editor_value();
+                if current_val.trim().is_empty() {
+                    app.delete_env_var();
+                    app.input_mode = InputMode::Normal;
+                    return;
+                }
+            }
+
             app.save_current_request();
             app.input_mode = InputMode::Normal;
             if app.focused_panel == FocusedPanel::Details
@@ -31,6 +47,11 @@ pub fn handle_editing_mode(app: &mut App, key: KeyEvent) {
                     PropertyTab::Params | PropertyTab::Headers | PropertyTab::Body => {
                         match app.property_editor_field {
                             PropertyEditorField::Key => {
+                                let current_val = app.get_kv_editor_value();
+                                if current_val.trim().is_empty() {
+                                    app.error_message = Some("Key cannot be empty".to_string());
+                                    return;
+                                }
                                 app.property_editor_field = PropertyEditorField::Value;
                                 let current_val = app.get_kv_editor_value();
                                 app.cursor_position = current_val.len();
@@ -51,6 +72,11 @@ pub fn handle_editing_mode(app: &mut App, key: KeyEvent) {
             } else if app.focused_panel == FocusedPanel::Environments {
                 match app.property_editor_field {
                     PropertyEditorField::Key => {
+                        let current_val = app.get_env_editor_value();
+                        if current_val.trim().is_empty() {
+                            app.error_message = Some("Key cannot be empty".to_string());
+                            return;
+                        }
                         app.property_editor_field = PropertyEditorField::Value;
                         let current_val = app.get_env_editor_value();
                         app.cursor_position = current_val.len();
@@ -75,6 +101,13 @@ pub fn handle_editing_mode(app: &mut App, key: KeyEvent) {
                     // Don't cycle fields in Auth tab, just keep focus on Value
                     app.property_editor_field = PropertyEditorField::Value;
                 } else {
+                    if app.property_editor_field == PropertyEditorField::Key {
+                        let current_val = app.get_kv_editor_value();
+                        if current_val.trim().is_empty() {
+                            app.error_message = Some("Key cannot be empty".to_string());
+                            return;
+                        }
+                    }
                     app.property_editor_field = match app.property_editor_field {
                         PropertyEditorField::Key => PropertyEditorField::Value,
                         PropertyEditorField::Value => PropertyEditorField::Description,
@@ -84,6 +117,13 @@ pub fn handle_editing_mode(app: &mut App, key: KeyEvent) {
                 let current_val = app.get_kv_editor_value();
                 app.cursor_position = current_val.len();
             } else if app.focused_panel == FocusedPanel::Environments {
+                if app.property_editor_field == PropertyEditorField::Key {
+                    let current_val = app.get_env_editor_value();
+                    if current_val.trim().is_empty() {
+                        app.error_message = Some("Key cannot be empty".to_string());
+                        return;
+                    }
+                }
                 app.property_editor_field = match app.property_editor_field {
                     PropertyEditorField::Key => PropertyEditorField::Value,
                     PropertyEditorField::Value => PropertyEditorField::Description,

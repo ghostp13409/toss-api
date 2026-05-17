@@ -12,6 +12,10 @@ use normal::*;
 use popups::*;
 
 pub fn handle_input(app: &mut App, key: KeyEvent) {
+    if let Some(_) = &app.error_message {
+        app.error_message = None;
+        return;
+    }
     if app.show_autocomplete {
         handle_autocomplete_input(app, key);
         return;

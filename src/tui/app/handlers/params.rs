@@ -4,16 +4,16 @@ use crate::core::collection::{Auth, KVParam, Request, RequestBody};
 use reqwest::Url;
 
 impl App {
-    pub fn add_env_var(&mut self) {
+    pub fn add_env_var(&mut self, key: String) {
         if let Some(col) = self.collections.get_mut(self.active_collection_index) {
             col.env_vars.push(KVParam {
-                key: String::new(),
+                key,
                 value: String::new(),
                 enabled: true,
                 description: None,
             });
             self.selected_env_index = col.env_vars.len().saturating_sub(1);
-            self.property_editor_field = PropertyEditorField::Key;
+            self.property_editor_field = PropertyEditorField::Value;
         }
     }
 
@@ -123,7 +123,7 @@ impl App {
         col.find_request_mut(&req_id)
     }
 
-    pub fn add_kv_param(&mut self) {
+    pub fn add_kv_param(&mut self, key: String) {
         let tab = self.selected_property_tab;
         if let Some(req) = self.get_current_request_mut() {
             let target = match tab {
@@ -137,13 +137,13 @@ impl App {
                 _ => return,
             };
             target.push(KVParam {
-                key: String::new(),
+                key,
                 value: String::new(),
                 enabled: true,
                 description: None,
             });
             self.property_editor_row = target.len() - 1;
-            self.property_editor_field = PropertyEditorField::Key;
+            self.property_editor_field = PropertyEditorField::Value;
         }
         if self.selected_property_tab == PropertyTab::Params {
             self.sync_url_from_params();

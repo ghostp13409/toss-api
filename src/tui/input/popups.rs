@@ -38,6 +38,10 @@ pub fn handle_rename_mode(app: &mut App, key: KeyEvent) {
     match key.code {
         KeyCode::Esc => app.input_mode = InputMode::Normal,
         KeyCode::Enter => {
+            if app.rename_input.trim().is_empty() {
+                app.error_message = Some("Name cannot be empty".to_string());
+                return;
+            }
             app.rename_item();
             app.input_mode = InputMode::Normal;
         }
@@ -106,10 +110,23 @@ pub fn handle_create_item_mode(app: &mut App, key: KeyEvent) {
         KeyCode::Esc => app.input_mode = InputMode::Normal,
         KeyCode::Enter => {
             let name = app.rename_input.clone();
+            if name.trim().is_empty()
+                && !matches!(
+                    app.pending_item_type,
+                    Some(PendingItemType::Collection)
+                        | Some(PendingItemType::Folder)
+                        | Some(PendingItemType::Request)
+                )
+            {
+                app.error_message = Some("Name cannot be empty".to_string());
+                return;
+            }
             match app.pending_item_type {
                 Some(PendingItemType::Collection) => app.add_collection(name),
                 Some(PendingItemType::Folder) => app.add_folder(name),
                 Some(PendingItemType::Request) => app.add_request(name),
+                Some(PendingItemType::KVParam) => app.add_kv_param(name),
+                Some(PendingItemType::EnvVar) => app.add_env_var(name),
                 None => {}
             }
             app.input_mode = InputMode::Normal;

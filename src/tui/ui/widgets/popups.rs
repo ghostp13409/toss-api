@@ -32,6 +32,8 @@ pub fn render_create_popup(f: &mut Frame, app: &App) {
         Some(PendingItemType::Collection) => " Create Collection ",
         Some(PendingItemType::Folder) => " Create Folder ",
         Some(PendingItemType::Request) => " Create Request ",
+        Some(PendingItemType::KVParam) => " Create Parameter (Key) ",
+        Some(PendingItemType::EnvVar) => " Create Variable (Key) ",
         None => " Create Item ",
     };
 
