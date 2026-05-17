@@ -34,7 +34,7 @@ impl App {
             rename_input: String::new(),
             pending_item_type: None,
             error_message: None,
-            should_delete_item: false,
+            // should_delete_item: false,
             selected_property_tab: PropertyTab::Params,
             property_editor_row: 0,
             property_editor_field: PropertyEditorField::Key,

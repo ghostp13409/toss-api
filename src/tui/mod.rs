@@ -71,13 +71,15 @@ where
     let (tx, mut rx) = mpsc::channel(100);
     let tick_rate = Duration::from_millis(250);
     let is_paused = Arc::new(AtomicBool::new(false));
+    let is_running = Arc::new(AtomicBool::new(true));
 
     // Event thread
     let tx_event = tx.clone();
     let is_paused_clone = is_paused.clone();
+    let is_running_clone = is_running.clone();
     tokio::spawn(async move {
         let mut last_tick = Instant::now();
-        loop {
+        while is_running_clone.load(Ordering::SeqCst) {
             if is_paused_clone.load(Ordering::SeqCst) {
                 tokio::time::sleep(Duration::from_millis(50)).await;
                 continue;
@@ -88,6 +90,9 @@ where
                 .unwrap_or_else(|| Duration::from_secs(0));
 
             if event::poll(timeout).unwrap_or(false) {
+                if !is_running_clone.load(Ordering::SeqCst) {
+                    break;
+                }
                 if is_paused_clone.load(Ordering::SeqCst) {
                     continue;
                 }
@@ -99,7 +104,9 @@ where
             }
 
             if last_tick.elapsed() >= tick_rate {
-                let _ = tx_event.send(AppEvent::Tick).await;
+                if is_running_clone.load(Ordering::SeqCst) {
+                    let _ = tx_event.send(AppEvent::Tick).await;
+                }
                 last_tick = Instant::now();
             }
         }
@@ -341,6 +348,7 @@ where
         }
 
         if app.should_quit {
+            is_running.store(false, Ordering::SeqCst);
             return Ok(());
         }
     }

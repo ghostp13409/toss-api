@@ -26,14 +26,14 @@ impl App {
         }
     }
 
-    pub fn update_env_var(&mut self, key: String, value: String) {
-        if let Some(col) = self.collections.get_mut(self.active_collection_index) {
-            if let Some(var) = col.env_vars.get_mut(self.selected_env_index) {
-                var.key = key;
-                var.value = value;
-            }
-        }
-    }
+    // pub fn update_env_var(&mut self, key: String, value: String) {
+    //     if let Some(col) = self.collections.get_mut(self.active_collection_index) {
+    //         if let Some(var) = col.env_vars.get_mut(self.selected_env_index) {
+    //             var.key = key;
+    //             var.value = value;
+    //         }
+    //     }
+    // }
 
     pub fn sync_url_from_params(&mut self) {
         let (params, base_url) = {

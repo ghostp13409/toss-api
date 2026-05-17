@@ -119,7 +119,7 @@ fn render_cursor(f: &mut Frame, app: &mut App, chunks: &[Rect], columns: &[Rect]
                 // Find cursor position in KV editor
                 if matches!(
                     app.selected_property_tab,
-                    PropertyTab::Params | PropertyTab::Headers | PropertyTab::Auth
+                    PropertyTab::Params | PropertyTab::Headers | PropertyTab::Auth | PropertyTab::Body
                 ) {
                     let area = Layout::default()
                         .direction(Direction::Vertical)
@@ -143,15 +143,15 @@ fn render_cursor(f: &mut Frame, app: &mut App, chunks: &[Rect], columns: &[Rect]
 
                     let offset = if show_description {
                         match app.property_editor_field {
-                            PropertyEditorField::Key => (5 * inner_area.width / 100) + 1,
-                            PropertyEditorField::Value => (35 * inner_area.width / 100) + 2,
-                            PropertyEditorField::Description => (65 * inner_area.width / 100) + 3,
+                            PropertyEditorField::Key => (5 * inner_area.width / 100) + 2,
+                            PropertyEditorField::Value => (35 * inner_area.width / 100) + 3,
+                            PropertyEditorField::Description => (65 * inner_area.width / 100) + 4,
                         }
                     } else {
                         match app.property_editor_field {
-                            PropertyEditorField::Key => (5 * inner_area.width / 100) + 1,
-                            PropertyEditorField::Value => (50 * inner_area.width / 100) + 2,
-                            PropertyEditorField::Description => (50 * inner_area.width / 100) + 2,
+                            PropertyEditorField::Key => (5 * inner_area.width / 100) + 2,
+                            PropertyEditorField::Value => (50 * inner_area.width / 100) + 3,
+                            PropertyEditorField::Description => (50 * inner_area.width / 100) + 3,
                         }
                     };
 
@@ -176,9 +176,9 @@ fn render_cursor(f: &mut Frame, app: &mut App, chunks: &[Rect], columns: &[Rect]
                 let y = inner_area.y + 1 + app.selected_env_index as u16;
 
                 let offset = match app.property_editor_field {
-                    PropertyEditorField::Key => 0,
-                    PropertyEditorField::Value => (40 * inner_area.width / 100) + 1,
-                    _ => 0,
+                    PropertyEditorField::Key => 1,
+                    PropertyEditorField::Value => (40 * inner_area.width / 100) + 2,
+                    _ => 1,
                 };
                 let current_val = app.get_env_editor_value();
                 let cursor_x = current_val[..app.cursor_position.min(current_val.len())]
@@ -213,7 +213,7 @@ fn render_cursor(f: &mut Frame, app: &mut App, chunks: &[Rect], columns: &[Rect]
                 .chars()
                 .count() as u16;
             f.set_cursor_position((
-                chunks[2].x + 1 + cursor_x + 1, // +1 for ':'
+                chunks[2].x + 11 + cursor_x,
                 chunks[2].y,
             ));
         }

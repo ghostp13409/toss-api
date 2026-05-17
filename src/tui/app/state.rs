@@ -26,7 +26,7 @@ pub struct App {
     pub rename_input: String,
     pub pending_item_type: Option<PendingItemType>,
     pub error_message: Option<String>,
-    pub should_delete_item: bool,
+    // pub should_delete_item: bool,
     pub selected_property_tab: PropertyTab,
     pub property_editor_row: usize,
     pub property_editor_field: PropertyEditorField,
