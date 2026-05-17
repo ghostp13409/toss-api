@@ -37,6 +37,7 @@ pub struct App {
     pub pending_actions: Vec<TuiAction>,
     pub response_scroll: u16,
     pub response_horizontal_scroll: u16,
+    pub stats_scroll: u16,
     pub details_scroll: usize,
     pub collections_state: ListState,
     pub apis_state: ListState,

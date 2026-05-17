@@ -224,6 +224,7 @@ impl App {
     pub fn reset_scroll(&mut self) {
         self.response_scroll = 0;
         self.response_horizontal_scroll = 0;
+        self.stats_scroll = 0;
         self.details_scroll = 0;
     }
 }

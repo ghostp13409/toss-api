@@ -62,7 +62,8 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                     FocusedPanel::Apis => app.selected_api_index = 0,
                     FocusedPanel::Environments => app.selected_env_index = 0,
                     FocusedPanel::Details => app.property_editor_row = 0,
-                    FocusedPanel::Response | FocusedPanel::Stats => app.response_scroll = 0,
+                    FocusedPanel::Response => app.response_scroll = 0,
+                    FocusedPanel::Stats => app.stats_scroll = 0,
                     _ => {}
                 }
                 app.g_pressed = false;
@@ -109,9 +110,11 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                         app.property_editor_row = max_rows.saturating_sub(1);
                     }
                 }
-                FocusedPanel::Response | FocusedPanel::Stats => {
-                    // Approximate bottom by setting high scroll
+                FocusedPanel::Response => {
                     app.response_scroll = 1000;
+                }
+                FocusedPanel::Stats => {
+                    app.stats_scroll = 100;
                 }
                 _ => {}
             }
@@ -131,8 +134,11 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                     app.property_editor_row = app.property_editor_row.saturating_sub(10);
                     app.details_scroll = app.details_scroll.saturating_sub(10);
                 }
-                FocusedPanel::Response | FocusedPanel::Stats => {
+                FocusedPanel::Response => {
                     app.response_scroll = app.response_scroll.saturating_sub(10);
+                }
+                FocusedPanel::Stats => {
+                    app.stats_scroll = app.stats_scroll.saturating_sub(10);
                 }
                 _ => {}
             }
@@ -151,8 +157,11 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                     app.property_editor_row += 10; // Capped in render/logic later
                     app.details_scroll = app.details_scroll.saturating_add(10);
                 }
-                FocusedPanel::Response | FocusedPanel::Stats => {
+                FocusedPanel::Response => {
                     app.response_scroll = app.response_scroll.saturating_add(10);
+                }
+                FocusedPanel::Stats => {
+                    app.stats_scroll = app.stats_scroll.saturating_add(10);
                 }
                 _ => {}
             }
@@ -225,8 +234,11 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                     }
                 }
             }
-            FocusedPanel::Response | FocusedPanel::Stats => {
+            FocusedPanel::Response => {
                 app.response_scroll = app.response_scroll.saturating_add(1);
+            }
+            FocusedPanel::Stats => {
+                app.stats_scroll = app.stats_scroll.saturating_add(1);
             }
             _ => {}
         },
@@ -270,8 +282,11 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                     }
                 }
             }
-            FocusedPanel::Response | FocusedPanel::Stats => {
+            FocusedPanel::Response => {
                 app.response_scroll = app.response_scroll.saturating_sub(1);
+            }
+            FocusedPanel::Stats => {
+                app.stats_scroll = app.stats_scroll.saturating_sub(1);
             }
             _ => {}
         },
