@@ -157,15 +157,6 @@ where
                             }
                         }
 
-                        let mut params = Vec::new();
-                        for p in &req.params {
-                            if p.enabled && !p.key.is_empty() {
-                                let key = env.replace_vars(&p.key);
-                                let value = env.replace_vars(&p.value);
-                                params.push((key, value));
-                            }
-                        }
-
                         let mut body_type = req.body.clone();
                         match &mut body_type {
                             crate::core::collection::RequestBody::Raw { content, .. } => {
@@ -213,7 +204,7 @@ where
                         tokio::spawn(async move {
                             let start = Instant::now();
                             match engine_clone
-                                .send(method, &url, headers, params, body_type, auth)
+                                .send(method, &url, headers, Vec::new(), body_type, auth)
                                 .await
                             {
                                 Ok(res) => {
