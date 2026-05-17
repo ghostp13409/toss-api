@@ -183,6 +183,26 @@ impl App {
         self.details_scroll = 0;
     }
 
+    pub fn cycle_stats_tab(&mut self) {
+        self.selected_stats_tab = match self.selected_stats_tab {
+            StatsTab::Overview => StatsTab::Network,
+            StatsTab::Network => StatsTab::Payload,
+            StatsTab::Payload => StatsTab::Security,
+            StatsTab::Security => StatsTab::Overview,
+        };
+        self.stats_scroll = 0;
+    }
+
+    pub fn prev_stats_tab(&mut self) {
+        self.selected_stats_tab = match self.selected_stats_tab {
+            StatsTab::Overview => StatsTab::Security,
+            StatsTab::Network => StatsTab::Overview,
+            StatsTab::Payload => StatsTab::Network,
+            StatsTab::Security => StatsTab::Payload,
+        };
+        self.stats_scroll = 0;
+    }
+
     pub fn clamp_selections(&mut self) {
         let collections = self.get_visible_collections();
         if !collections.is_empty() {

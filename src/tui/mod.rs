@@ -3,7 +3,7 @@ pub mod input;
 pub mod ui;
 
 use crate::engine::http::RequestEngine;
-use app::{App, TuiAction};
+use app::{App, ResponseStats, TuiAction};
 use arboard::Clipboard;
 use crossterm::{
     event::{self, Event, KeyEvent},
@@ -24,7 +24,12 @@ use tokio::sync::mpsc;
 enum AppEvent {
     Input(KeyEvent),
     Tick,
-    HttpResponse(String, Option<String>, Option<String>, Option<String>),
+    HttpResponse(
+        String,
+        Option<String>,
+        Option<ResponseStats>,
+        Option<String>,
+    ),
 }
 
 pub fn run_tui() -> Result<(), Box<dyn std::error::Error>> {
@@ -112,7 +117,6 @@ where
         }
     });
 
-    let engine = RequestEngine::new();
     let mut clipboard = Clipboard::new().ok();
 
     loop {
@@ -128,9 +132,7 @@ where
                     app.response_body = body;
                     app.response_content_type = content_type;
                     app.response_status = status;
-                    if let Some(s) = stats {
-                        app.response_stats = s;
-                    }
+                    app.response_stats_data = stats;
                 }
             }
         }
@@ -199,50 +201,74 @@ where
                         };
 
                         let tx_res = tx.clone();
-                        let engine_clone = engine.clone();
+                        let final_url = url.clone();
+                        let final_method = format!("{:?}", method);
 
                         tokio::spawn(async move {
+                            let client = reqwest::Client::builder()
+                                .connection_verbose(true)
+                                .build()
+                                .unwrap_or_default();
+
                             let start = Instant::now();
-                            match engine_clone
-                                .send(method, &url, headers, Vec::new(), body_type, auth)
-                                .await
-                            {
+                            let engine = RequestEngine::with_client(client);
+
+                            match engine.send(method, &url, headers, Vec::new(), body_type, auth).await {
                                 Ok(res) => {
-                                    let duration = start.elapsed();
+                                    let ttfb = start.elapsed();
                                     let status = Some(res.status().to_string());
                                     let version = format!("{:?}", res.version());
-                                    let content_type = res
-                                        .headers()
-                                        .get(reqwest::header::CONTENT_TYPE)
-                                        .and_then(|v| v.to_str().ok())
-                                        .map(|s| s.to_string());
-                                    let body = res
-                                        .text()
-                                        .await
-                                        .unwrap_or_else(|e| format!("Error reading body: {}", e));
-                                    let size = body.len();
-                                    let stats = format!(
-                                        "Time: {:?}\nSize: {} bytes\nProto: {}",
-                                        duration, size, version
-                                    );
-                                    let _ = tx_res
-                                        .send(AppEvent::HttpResponse(
-                                            body,
-                                            status,
-                                            Some(stats),
-                                            content_type,
-                                        ))
-                                        .await;
+                                    let remote_addr = res.remote_addr().map(|a| a.to_string());
+
+                                    let mut header_size = 0;
+                                    let mut headers_map = HashMap::new();
+                                    for (k, v) in res.headers() {
+                                        let key_str = k.as_str().to_string();
+                                        let val_str = v.to_str().unwrap_or("").to_string();
+                                        header_size += key_str.len() + val_str.len() + 4;
+                                        headers_map.insert(key_str, val_str);
+                                    }
+
+                                    let content_type = headers_map.get("content-type").cloned();
+
+                                    let body_start = Instant::now();
+                                    let body_bytes = res.bytes().await.unwrap_or_default();
+                                    let download_time = body_start.elapsed();
+                                    let total_time = start.elapsed();
+
+                                    let body_size = body_bytes.len();
+                                    let body_text = String::from_utf8_lossy(&body_bytes).into_owned();
+
+                                    let stats = ResponseStats {
+                                        total_time,
+                                        dns_time: Duration::from_millis(0),
+                                        connect_time: Duration::from_millis(0),
+                                        tls_time: Duration::from_millis(0),
+                                        ttfb,
+                                        download_time,
+                                        header_size,
+                                        body_size,
+                                        version,
+                                        headers: headers_map,
+                                        url: final_url,
+                                        method: final_method,
+                                        remote_addr,
+                                    };
+
+                                    let _ = tx_res.send(AppEvent::HttpResponse(
+                                        body_text,
+                                        status,
+                                        Some(stats),
+                                        content_type,
+                                    )).await;
                                 }
                                 Err(e) => {
-                                    let _ = tx_res
-                                        .send(AppEvent::HttpResponse(
-                                            format!("Error: {}", e),
-                                            Some("ERROR".to_string()),
-                                            None,
-                                            None,
-                                        ))
-                                        .await;
+                                    let _ = tx_res.send(AppEvent::HttpResponse(
+                                        format!("Error: {}", e),
+                                        Some("ERROR".to_string()),
+                                        None,
+                                        None,
+                                    )).await;
                                 }
                             }
                         });

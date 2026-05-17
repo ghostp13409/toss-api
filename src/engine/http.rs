@@ -14,6 +14,10 @@ impl RequestEngine {
         }
     }
 
+    pub fn with_client(client: Client) -> Self {
+        Self { client }
+    }
+
     pub async fn send(
         &self,
         method: Method,

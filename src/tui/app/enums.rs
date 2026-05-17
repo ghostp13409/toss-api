@@ -73,6 +73,15 @@ pub enum PendingItemType {
     EnvVar,
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Default)]
+pub enum StatsTab {
+    #[default]
+    Overview,
+    Network,
+    Payload,
+    Security,
+}
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum VisibleItemType {
     Collection { expanded: bool },

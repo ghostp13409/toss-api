@@ -422,18 +422,13 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                     RequestBarPart::Send => RequestBarPart::Method,
                 };
             }
-            FocusedPanel::Collections => {
-                app.focused_panel = FocusedPanel::Apis;
-            }
-            FocusedPanel::Apis => {
-                app.focused_panel = FocusedPanel::RequestBar;
-            }
             FocusedPanel::Response => {
                 app.response_horizontal_scroll = app.response_horizontal_scroll.saturating_add(1);
             }
-            _ => {
-                app.next_panel();
+            FocusedPanel::Stats => {
+                app.cycle_stats_tab();
             }
+            _ => {}
         },
 
         // Move Left / Prev Tab
@@ -467,6 +462,9 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
             }
             FocusedPanel::Response => {
                 app.response_horizontal_scroll = app.response_horizontal_scroll.saturating_sub(1);
+            }
+            FocusedPanel::Stats => {
+                app.prev_stats_tab();
             }
             _ => {
                 app.pop_up();
@@ -543,6 +541,8 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                     PropertyTab::Body => app.cycle_body_type(),
                     _ => {}
                 }
+            } else if app.focused_panel == FocusedPanel::Stats {
+                app.cycle_stats_tab();
             }
         }
 

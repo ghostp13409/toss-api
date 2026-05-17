@@ -1,5 +1,5 @@
 use crate::core::collection::KVParam;
-use crate::tui::app::{App, FocusedPanel, PropertyEditorField, PropertyTab, RequestBarPart};
+use crate::tui::app::{App, FocusedPanel, PropertyEditorField, PropertyTab, RequestBarPart, StatsTab};
 use crate::tui::ui::syntax::{apply_env_vars, format_content, highlight_content};
 use crate::tui::ui::utils::{
     create_block, get_method_enum_color, highlight_env_vars, title_with_key,
@@ -30,8 +30,8 @@ pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
     let response_area = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            Constraint::Percentage(80), // Response Body
-            Constraint::Percentage(20), // Stats
+            Constraint::Percentage(70), // Response Body
+            Constraint::Percentage(30), // Stats
         ])
         .split(chunks[3]);
 
@@ -63,52 +63,223 @@ pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
         .wrap(Wrap { trim: false });
     f.render_widget(response_content, response_area[0]);
 
+    let stats_tab_name = match app.selected_stats_tab {
+        StatsTab::Overview => "Overview",
+        StatsTab::Network => "Network",
+        StatsTab::Payload => "Payload",
+        StatsTab::Security => "Security",
+    };
+
     let stat_block = create_block(
-        title_with_key("T", "Stat"),
+        title_with_key("T", format!("Stats: [{}]", stats_tab_name)),
         app.focused_panel == FocusedPanel::Stats,
     );
 
     let mut stat_lines = Vec::new();
 
-    if let Some(status) = &app.response_status {
-        let style = if status.contains("200") || status.starts_with('2') {
-            Style::default()
-                .bg(Color::Green)
-                .fg(Color::Black)
-                .add_modifier(Modifier::BOLD)
-        } else if status.starts_with('3') {
-            Style::default()
-                .bg(Color::Cyan)
-                .fg(Color::Black)
-                .add_modifier(Modifier::BOLD)
-        } else if status.starts_with('4') {
-            Style::default()
-                .bg(Color::Yellow)
-                .fg(Color::Black)
-                .add_modifier(Modifier::BOLD)
-        } else if status.starts_with('5') || status == "ERROR" {
-            Style::default()
-                .bg(Color::Red)
-                .fg(Color::White)
-                .add_modifier(Modifier::BOLD)
-        } else {
-            Style::default().add_modifier(Modifier::BOLD)
-        };
-        stat_lines.push(Line::from(vec![
-            Span::raw(" Status: "),
-            Span::styled(format!(" {} ", status), style),
-        ]));
-        stat_lines.push(Line::raw(""));
-    }
+    // Render Tab indicators at the very top of content
+    let tabs = [
+        ("O", StatsTab::Overview),
+        ("N", StatsTab::Network),
+        ("L", StatsTab::Payload),
+        ("S", StatsTab::Security),
+    ];
+    let tab_spans: Vec<Span> = tabs
+        .iter()
+        .map(|(label, variant)| {
+            let is_selected = app.selected_stats_tab == *variant;
+            let style = if is_selected {
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD | Modifier::UNDERLINED)
+            } else {
+                Style::default().fg(Color::DarkGray)
+            };
+            let text = if is_selected {
+                format!(" {} ", stats_tab_name)
+            } else {
+                format!(" {} ", label)
+            };
+            Span::styled(text, style)
+        })
+        .collect();
+    stat_lines.push(Line::from(tab_spans));
+    stat_lines.push(Line::raw(""));
 
-    if app.response_stats.is_empty() {
-        if app.response_status.is_none() {
-            stat_lines.push(Line::raw("No Data"));
+    if let Some(stats) = &app.response_stats_data {
+        match app.selected_stats_tab {
+            StatsTab::Overview => {
+                stat_lines.push(Line::from(vec![
+                    Span::styled(" URL:    ", Style::default().fg(Color::DarkGray)),
+                    Span::raw(&stats.url),
+                ]));
+                stat_lines.push(Line::from(vec![
+                    Span::styled(" Method: ", Style::default().fg(Color::DarkGray)),
+                    Span::styled(&stats.method, Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+                ]));
+
+                if let Some(status) = &app.response_status {
+                    let color = if status.starts_with('2') {
+                        Color::Green
+                    } else if status.starts_with('4') {
+                        Color::Yellow
+                    } else if status.starts_with('5') || status == "ERROR" {
+                        Color::Red
+                    } else {
+                        Color::White
+                    };
+                    stat_lines.push(Line::from(vec![
+                        Span::styled(" Status: ", Style::default().fg(Color::DarkGray)),
+                        Span::styled(status, Style::default().fg(color).add_modifier(Modifier::BOLD)),
+                    ]));
+                }
+                stat_lines.push(Line::from(vec![
+                    Span::styled(" Proto:  ", Style::default().fg(Color::DarkGray)),
+                    Span::raw(&stats.version),
+                ]));
+                if let Some(addr) = &stats.remote_addr {
+                    stat_lines.push(Line::from(vec![
+                        Span::styled(" Remote: ", Style::default().fg(Color::DarkGray)),
+                        Span::raw(addr),
+                    ]));
+                }
+            }
+            StatsTab::Network => {
+                stat_lines.push(Line::from(vec![
+                    Span::styled(" Total Time: ", Style::default().fg(Color::DarkGray)),
+                    Span::styled(format!("{:?}", stats.total_time), Style::default().add_modifier(Modifier::BOLD)),
+                ]));
+                stat_lines.push(Line::raw(""));
+
+                let total_ms = stats.total_time.as_millis() as f64;
+                let width = response_area[1].width.saturating_sub(6) as f64;
+
+                if total_ms > 0.0 {
+                    let phases = [
+                        ("DNS Lookup", stats.dns_time, Color::Blue),
+                        ("TCP Connect", stats.connect_time, Color::Cyan),
+                        ("TLS Handshake", stats.tls_time, Color::Magenta),
+                        ("TTFB (Server)", stats.ttfb.saturating_sub(stats.dns_time + stats.connect_time + stats.tls_time), Color::Yellow),
+                        ("Download", stats.download_time, Color::Green),
+                    ];
+
+                    for (name, duration, color) in phases {
+                        let ms = duration.as_millis() as f64;
+                        let p_width = ((ms / total_ms) * width).max(1.0).round() as usize;
+                        let perc = (ms / total_ms) * 100.0;
+
+                        stat_lines.push(Line::raw(format!(" {}:", name)));
+                        stat_lines.push(Line::from(vec![
+                            Span::raw(" "),
+                            Span::styled("█".repeat(p_width), Style::default().fg(color)),
+                            Span::raw(format!(" {:?} ({:.0}%)", duration, perc)),
+                        ]));
+                    }
+                }
+            }
+            StatsTab::Payload => {
+                let total_size = stats.header_size + stats.body_size;
+                stat_lines.push(Line::from(vec![
+                    Span::styled(" Total Size: ", Style::default().fg(Color::DarkGray)),
+                    Span::styled(format_size(total_size), Style::default().add_modifier(Modifier::BOLD)),
+                ]));
+                stat_lines.push(Line::raw(""));
+
+                if total_size > 0 {
+                    let h_perc_val = (stats.header_size as f64 / total_size as f64) * 100.0;
+                    let b_perc_val = (stats.body_size as f64 / total_size as f64) * 100.0;
+                    let bar_width: usize = 15;
+                    let h_width = ((stats.header_size as f64 / total_size as f64) * bar_width as f64).round() as usize;
+                    let b_width = ((stats.body_size as f64 / total_size as f64) * bar_width as f64).round() as usize;
+
+                    stat_lines.push(Line::from(vec![
+                        Span::styled(" ├── Headers: ", Style::default().fg(Color::DarkGray)),
+                        Span::raw(format_size(stats.header_size)),
+                    ]));
+                    stat_lines.push(Line::from(vec![
+                        Span::raw(" │   ["),
+                        Span::styled("█".repeat(h_width), Style::default().fg(Color::Blue)),
+                        Span::styled("░".repeat(bar_width.saturating_sub(h_width)), Style::default().fg(Color::DarkGray)),
+                        Span::raw(format!("] {:.0}%", h_perc_val)),
+                    ]));
+
+                    stat_lines.push(Line::from(vec![
+                        Span::styled(" └── Body:    ", Style::default().fg(Color::DarkGray)),
+                        Span::raw(format_size(stats.body_size)),
+                    ]));
+                    stat_lines.push(Line::from(vec![
+                        Span::raw("     ["),
+                        Span::styled("█".repeat(b_width), Style::default().fg(Color::Magenta)),
+                        Span::styled("░".repeat(bar_width.saturating_sub(b_width)), Style::default().fg(Color::DarkGray)),
+                        Span::raw(format!("] {:.0}%", b_perc_val)),
+                    ]));
+
+                    if let Some(enc) = stats.headers.get("content-encoding") {
+                        stat_lines.push(Line::raw(""));
+                        stat_lines.push(Line::from(vec![
+                            Span::styled(" Compression: ", Style::default().fg(Color::DarkGray)),
+                            Span::styled(enc.to_uppercase(), Style::default().fg(Color::Green)),
+                        ]));
+                    }
+                }
+            }
+            StatsTab::Security => {
+                // Rate Limiting
+                let limit = stats.headers.get("x-ratelimit-limit");
+                let remaining = stats.headers.get("x-ratelimit-remaining");
+                let reset = stats.headers.get("x-ratelimit-reset");
+
+                if let (Some(l), Some(r)) = (limit, remaining) {
+                    stat_lines.push(Line::styled(" Rate Limit", Style::default().fg(Color::Cyan)));
+                    stat_lines.push(Line::raw(format!("  {} / {}", r, l)));
+                    if let (Ok(rv), Ok(lv)) = (r.parse::<f64>(), l.parse::<f64>()) {
+                        let perc = (rv / lv) * 10.0;
+                        let color = if perc < 2.0 { Color::Red } else if perc < 5.0 { Color::Yellow } else { Color::Green };
+                        stat_lines.push(Line::from(vec![
+                            Span::raw("  ["),
+                            Span::styled("█".repeat(perc.round() as usize), Style::default().fg(color)),
+                            Span::styled("░".repeat(10usize.saturating_sub(perc.round() as usize)), Style::default().fg(Color::DarkGray)),
+                            Span::raw("]"),
+                        ]));
+                    }
+                    if let Some(res) = reset {
+                         stat_lines.push(Line::raw(format!("  Resets in: {}s", res)));
+                    }
+                    stat_lines.push(Line::raw(""));
+                }
+
+                // Caching
+                let cache_control = stats.headers.get("cache-control");
+                let x_cache = stats.headers.get("x-cache");
+                let age = stats.headers.get("age");
+
+                if cache_control.is_some() || x_cache.is_some() {
+                    stat_lines.push(Line::styled(" Caching", Style::default().fg(Color::Cyan)));
+                    if let Some(xc) = x_cache {
+                        stat_lines.push(Line::raw(format!("  Status: {}", xc)));
+                    }
+                    if let Some(a) = age {
+                        stat_lines.push(Line::raw(format!("  Age: {}s", a)));
+                    }
+                    if let Some(cc) = cache_control {
+                        stat_lines.push(Line::raw(format!("  Policy: {}", cc)));
+                    }
+                }
+
+                if let Some(server) = stats.headers.get("server") {
+                    stat_lines.push(Line::raw(""));
+                    stat_lines.push(Line::styled(" Server", Style::default().fg(Color::Cyan)));
+                    stat_lines.push(Line::raw(format!("  {}", server)));
+                }
+
+                if stat_lines.len() <= 2 {
+                    stat_lines.push(Line::raw(" No security/governance"));
+                    stat_lines.push(Line::raw(" headers found."));
+                }
+            }
         }
     } else {
-        for line in app.response_stats.lines() {
-            stat_lines.push(Line::raw(line.to_string()));
-        }
+        stat_lines.push(Line::raw(" No Data"));
     }
 
     let stat_area_inner = stat_block.inner(response_area[1]);
@@ -129,6 +300,16 @@ pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
         .scroll((app.stats_scroll, 0))
         .wrap(Wrap { trim: false });
     f.render_widget(stat_content, response_area[1]);
+}
+
+fn format_size(bytes: usize) -> String {
+    if bytes < 1024 {
+        format!("{} B", bytes)
+    } else if bytes < 1024 * 1024 {
+        format!("{:.2} KB", bytes as f64 / 1024.0)
+    } else {
+        format!("{:.2} MB", bytes as f64 / (1024.0 * 1024.0))
+    }
 }
 
 pub fn render_request_bar(f: &mut Frame, app: &App, area: Rect) {
