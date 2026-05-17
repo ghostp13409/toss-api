@@ -44,6 +44,19 @@ pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
     let trimmed_body = formatted_body.trim_end();
     let highlighted_body = highlight_content(trimmed_body, app.response_content_type.as_deref());
 
+    let response_area_inner = response_block.inner(response_area[0]);
+    let response_height = response_area_inner.height;
+    let line_count = highlighted_body.lines.len() as u16;
+
+    if line_count <= response_height {
+        app.response_scroll = 0;
+    } else {
+        let max_scroll = line_count.saturating_sub(response_height);
+        if app.response_scroll > max_scroll {
+            app.response_scroll = max_scroll;
+        }
+    }
+
     let response_content = Paragraph::new(highlighted_body)
         .block(response_block)
         .scroll((app.response_scroll, app.response_horizontal_scroll))
@@ -95,6 +108,19 @@ pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
     } else {
         for line in app.response_stats.lines() {
             stat_lines.push(Line::raw(line.to_string()));
+        }
+    }
+
+    let stat_area_inner = stat_block.inner(response_area[1]);
+    let stat_height = stat_area_inner.height;
+    let stat_line_count = stat_lines.len() as u16;
+
+    if stat_line_count <= stat_height {
+        app.stats_scroll = 0;
+    } else {
+        let max_scroll = stat_line_count.saturating_sub(stat_height);
+        if app.stats_scroll > max_scroll {
+            app.stats_scroll = max_scroll;
         }
     }
 
