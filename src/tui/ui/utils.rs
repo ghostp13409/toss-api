@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use crate::cli::args::Method;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
@@ -75,7 +76,10 @@ pub fn highlight_env_vars<'a>(text: &'a str) -> Line<'static> {
     Line::from(spans)
 }
 
-pub fn title_with_key<'a>(key: &'a str, title: &'a str) -> Line<'a> {
+pub fn title_with_key<'a, S>(key: &'a str, title: S) -> Line<'a>
+where
+    S: Into<Cow<'a, str>>,
+{
     Line::from(vec![
         Span::raw(" "),
         Span::styled(

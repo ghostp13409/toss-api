@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 use serde::{Deserialize, Serialize};
 
 #[derive(Parser)]
-#[command(name = "toss")]
+#[command(name = "toss-api")]
 #[command(about = "A Vim-inspired TUI API client", long_about = None)]
 pub struct CliArgs {
     #[command(subcommand)]

@@ -1,4 +1,4 @@
-# Toss Project Guidelines
+# Toss-API Project Guidelines
 
 ## UI & Navigation Design
 - **Lazydocker-inspired**: The TUI must visually resemble lazydocker (Left sidebar for lists, Right main area for context/details).

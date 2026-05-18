@@ -27,7 +27,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
         .split(f.area());
 
     // 1. Title
-    let title_text = format!(" Toss {} ", env!("CARGO_PKG_VERSION"));
+    let title_text = format!(" Toss-API {} ", env!("CARGO_PKG_VERSION"));
     let title = Paragraph::new(title_text)
         .style(Style::default().add_modifier(Modifier::BOLD))
         .alignment(ratatui::layout::Alignment::Left);
