@@ -73,6 +73,9 @@ pub fn render(f: &mut Frame, app: &mut App) {
     if let Some(error) = &app.error_message {
         render_error_popup(f, error);
     }
+    if let Some((message, _)) = &app.notification {
+        render_notification(f, message);
+    }
     if app.show_autocomplete {
         render_autocomplete(f, app);
     }

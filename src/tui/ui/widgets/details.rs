@@ -71,7 +71,7 @@ pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
     };
 
     let stat_block = create_block(
-        title_with_key("T", format!("Stats: [{}]", stats_tab_name)),
+        title_with_key("T", format!(" Stats: [{}] (Press 't' to change) ", stats_tab_name)),
         app.focused_panel == FocusedPanel::Stats,
     );
 

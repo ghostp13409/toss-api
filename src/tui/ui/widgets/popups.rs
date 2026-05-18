@@ -24,6 +24,29 @@ pub fn render_error_popup(f: &mut Frame, error: &str) {
     f.render_widget(p, area);
 }
 
+pub fn render_notification(f: &mut Frame, message: &str) {
+    let size = f.area();
+    // Notification size: width 35, height 3
+    let width = 35;
+    let height = 3;
+    
+    // Position: bottom-right with 1 character margin
+    let x = size.width.saturating_sub(width).saturating_sub(1);
+    let y = size.height.saturating_sub(height).saturating_sub(1);
+    
+    let area = Rect::new(x, y, width, height);
+    f.render_widget(Clear, area);
+
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Green).add_modifier(Modifier::BOLD));
+
+    let p = Paragraph::new(format!(" {} ", message))
+        .block(block)
+        .alignment(ratatui::layout::Alignment::Center);
+    f.render_widget(p, area);
+}
+
 pub fn render_create_popup(f: &mut Frame, app: &App) {
     let area = centered_rect(40, 10, f.area());
     f.render_widget(Clear, area);

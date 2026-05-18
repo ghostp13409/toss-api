@@ -16,7 +16,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(command) = args.command {
         run_cli(command).await?;
     } else {
-        run_tui()?;
+        run_tui().await?;
     }
 
     Ok(())

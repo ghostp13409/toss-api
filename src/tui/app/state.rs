@@ -43,6 +43,7 @@ pub struct App {
     pub rename_input: String,
     pub pending_item_type: Option<PendingItemType>,
     pub error_message: Option<String>,
+    pub notification: Option<(String, std::time::Instant)>,
     // pub should_delete_item: bool,
     pub selected_property_tab: PropertyTab,
     pub property_editor_row: usize,

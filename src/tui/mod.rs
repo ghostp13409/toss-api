@@ -32,7 +32,7 @@ enum AppEvent {
     ),
 }
 
-pub fn run_tui() -> Result<(), Box<dyn std::error::Error>> {
+pub async fn run_tui() -> Result<(), Box<dyn std::error::Error>> {
     // setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -49,7 +49,7 @@ pub fn run_tui() -> Result<(), Box<dyn std::error::Error>> {
         _ => app.load_sample_data(),
     }
 
-    let res = run_app(&mut terminal, &mut app);
+    let res = run_app(&mut terminal, &mut app).await;
 
     // restore terminal
     disable_raw_mode()?;
@@ -66,7 +66,7 @@ pub fn run_tui() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn run_app<B: ratatui::backend::Backend>(
+async fn run_app<B: ratatui::backend::Backend>(
     terminal: &mut Terminal<B>,
     app: &mut App,
 ) -> Result<(), Box<dyn std::error::Error>>
@@ -122,12 +122,18 @@ where
     loop {
         terminal.draw(|f| ui::render(f, app))?;
 
-        if let Ok(event) = rx.try_recv() {
+        if let Some(event) = rx.recv().await {
             match event {
                 AppEvent::Input(key) => {
                     handle_input(app, key);
                 }
-                AppEvent::Tick => {}
+                AppEvent::Tick => {
+                    if let Some((_, instant)) = &app.notification {
+                        if instant.elapsed() >= Duration::from_secs(3) {
+                            app.notification = None;
+                        }
+                    }
+                }
                 AppEvent::HttpResponse(body, status, stats, content_type) => {
                     app.response_body = body;
                     app.response_content_type = content_type;
@@ -137,7 +143,7 @@ where
             }
         }
 
-        // Process pending actions
+        // Process all currently pending actions
         let actions: Vec<TuiAction> = app.pending_actions.drain(..).collect();
         for action in actions {
             match action {
@@ -325,30 +331,46 @@ where
                             _ => String::new(),
                         };
                         if let Some(cb) = clipboard.as_mut() {
-                            let _ = cb.set_text(body);
+                            match cb.set_text(body) {
+                                Ok(_) => app.notify("Body copied to clipboard"),
+                                Err(e) => app.notify(format!("Failed to copy: {}", e)),
+                            }
+                        } else {
+                            app.notify("Clipboard not available");
                         }
                     }
                 }
                 TuiAction::PasteBody => {
                     if let Some(cb) = clipboard.as_mut() {
-                        if let Ok(text) = cb.get_text() {
-                            if let Some(col) = app.collections.get_mut(app.active_collection_index)
-                            {
-                                if let Some(req_id) = &app.current_request_id {
-                                    if let Some(req_mut) = col.find_request_mut(req_id) {
-                                        req_mut.body = crate::core::collection::RequestBody::Raw {
-                                            content: text,
-                                            content_type: "application/json".to_string(),
-                                        };
+                        match cb.get_text() {
+                            Ok(text) => {
+                                if let Some(col) = app.collections.get_mut(app.active_collection_index)
+                                {
+                                    if let Some(req_id) = &app.current_request_id {
+                                        if let Some(req_mut) = col.find_request_mut(req_id) {
+                                            req_mut.body = crate::core::collection::RequestBody::Raw {
+                                                content: text,
+                                                content_type: "application/json".to_string(),
+                                            };
+                                            app.notify("Body pasted from clipboard");
+                                        }
                                     }
                                 }
                             }
+                            Err(e) => app.notify(format!("Failed to paste: {}", e)),
                         }
+                    } else {
+                        app.notify("Clipboard not available");
                     }
                 }
                 TuiAction::CopyResponseBody => {
                     if let Some(cb) = clipboard.as_mut() {
-                        let _ = cb.set_text(app.response_body.clone());
+                        match cb.set_text(app.response_body.clone()) {
+                            Ok(_) => app.notify("Response body copied"),
+                            Err(e) => app.notify(format!("Failed to copy: {}", e)),
+                        }
+                    } else {
+                        app.notify("Clipboard not available");
                     }
                 }
                 TuiAction::CopyResponseAll => {
@@ -358,7 +380,12 @@ where
                         app.response_body
                     );
                     if let Some(cb) = clipboard.as_mut() {
-                        let _ = cb.set_text(all);
+                        match cb.set_text(all) {
+                            Ok(_) => app.notify("Response copied"),
+                            Err(e) => app.notify(format!("Failed to copy: {}", e)),
+                        }
+                    } else {
+                        app.notify("Clipboard not available");
                     }
                 }
             }

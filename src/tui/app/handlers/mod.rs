@@ -34,6 +34,7 @@ impl App {
             rename_input: String::new(),
             pending_item_type: None,
             error_message: None,
+            notification: None,
             // should_delete_item: false,
             selected_property_tab: PropertyTab::Params,
             property_editor_row: 0,
@@ -83,6 +84,10 @@ impl App {
 
     pub fn toggle_env_mask(&mut self) {
         self.mask_env_values = !self.mask_env_values;
+    }
+
+    pub fn notify(&mut self, message: impl Into<String>) {
+        self.notification = Some((message.into(), std::time::Instant::now()));
     }
 
     pub fn create_smart_env(&mut self) {
