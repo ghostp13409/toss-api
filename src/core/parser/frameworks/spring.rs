@@ -21,7 +21,17 @@ impl SpringParser {
             "string" => FieldType::String,
             "int" | "integer" | "long" | "double" | "float" | "bigdecimal" => FieldType::Number,
             "boolean" | "bool" => FieldType::Boolean,
+            "localdate" | "localdatetime" | "instant" | "zodatetime" | "date" => FieldType::DateTime,
+            t if t.contains("map") => {
+                FieldType::Map(Box::new(FieldType::String), Box::new(FieldType::Unknown))
+            }
             t if t.contains("list") || t.contains("set") || t.contains("iterable") => {
+                if let Some(start) = t.find('<') {
+                    if let Some(end) = t.rfind('>') {
+                        let inner = &t[start + 1..end];
+                        return FieldType::Array(Box::new(Self::parse_java_type(inner)));
+                    }
+                }
                 FieldType::Array(Box::new(FieldType::Unknown))
             }
             _ => FieldType::Object(type_str.to_string()),

@@ -21,9 +21,16 @@ impl FastApiParser {
             "str" => FieldType::String,
             "int" | "float" => FieldType::Number,
             "bool" => FieldType::Boolean,
+            "datetime" | "date" | "time" => FieldType::DateTime,
+            t if t.starts_with("dict[") || t.starts_with("dict") => {
+                FieldType::Map(Box::new(FieldType::String), Box::new(FieldType::Unknown))
+            }
             t if t.starts_with("list[") || t.starts_with("list") => {
-                // Simplified list parsing
-                FieldType::Array(Box::new(FieldType::Unknown))
+                if let Some(inner) = t.strip_prefix("list[").and_then(|s| s.strip_suffix(']')) {
+                    FieldType::Array(Box::new(Self::parse_python_type(inner)))
+                } else {
+                    FieldType::Array(Box::new(FieldType::Unknown))
+                }
             }
             _ => FieldType::Object(type_str.to_string()),
         }

@@ -560,6 +560,10 @@ pub fn render_details_area(f: &mut Frame, app: &mut App, area: Rect) {
                     f.render_widget(Paragraph::new(" No body ").block(block), area);
                 }
                 crate::core::collection::BodyType::Raw => {
+                    let title = format!(
+                        " Body: Raw [{}] (Press 't' to cycle type, 'c' for format) ",
+                        body.raw.content_type
+                    );
                     let block = create_block(
                         title_with_key("B", title),
                         app.focused_panel == FocusedPanel::Details,

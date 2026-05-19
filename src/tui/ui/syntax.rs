@@ -57,16 +57,16 @@ pub fn apply_env_vars(text: &mut Text<'static>) {
     for line in &mut text.lines {
         let mut new_spans = Vec::new();
         for span in std::mem::take(&mut line.spans) {
-            let content = span.content.to_string(); // Need to convert to String for char iteration
+            let content = span.content.to_string();
             let style = span.style;
 
             let mut last_pos = 0;
             let chars: Vec<char> = content.chars().collect();
             let mut i = 0;
 
-            let mut found_any = false;
             while i < chars.len() {
                 if i + 1 < chars.len() && chars[i] == '{' && chars[i + 1] == '{' {
+                    // Push text before the variable
                     if i > last_pos {
                         new_spans.push(Span::styled(
                             chars[last_pos..i].iter().collect::<String>(),
@@ -86,27 +86,25 @@ pub fn apply_env_vars(text: &mut Text<'static>) {
                             i = j + 2;
                             last_pos = i;
                             found_end = true;
-                            found_any = true;
                             break;
                         }
                     }
                     if !found_end {
-                        i += 1;
+                        i += 2; // Skip the {{ and continue searching
                     }
                 } else {
                     i += 1;
                 }
             }
 
+            // Push any remaining text in the span
             if last_pos < chars.len() {
                 new_spans.push(Span::styled(
                     chars[last_pos..].iter().collect::<String>(),
                     style,
                 ));
-            }
-
-            if !found_any {
-                new_spans.pop();
+            } else if last_pos == 0 && chars.is_empty() {
+                // Preserve empty spans if they existed (though syntect usually doesn't return them)
                 new_spans.push(Span::styled(content, style));
             }
         }

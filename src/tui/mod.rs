@@ -275,19 +275,28 @@ where
                     }
                 }
                 TuiAction::EditBody => {
-                    let (req_id, current_body) = if let Some(req) = app.get_current_request() {
-                        let body = match req.body.selected {
-                            crate::core::collection::BodyType::Raw => req.body.raw.content.clone(),
-                            _ => String::new(),
+                    let (req_id, current_body, extension) = if let Some(req) = app.get_current_request() {
+                        let (body, ct) = match req.body.selected {
+                            crate::core::collection::BodyType::Raw => (req.body.raw.content.clone(), req.body.raw.content_type.clone()),
+                            _ => (String::new(), "text/plain".to_string()),
                         };
-                        (req.id.clone(), body)
+                        let ext = if ct.contains("json") {
+                            "json"
+                        } else if ct.contains("xml") {
+                            "xml"
+                        } else if ct.contains("html") {
+                            "html"
+                        } else {
+                            "txt"
+                        };
+                        (req.id.clone(), body, ext)
                     } else {
                         continue;
                     };
 
                     is_paused.store(true, Ordering::SeqCst);
 
-                    let temp_file = format!("/tmp/toss_body_{}.txt", req_id);
+                    let temp_file = format!("/tmp/toss_body_{}.{}", req_id, extension);
                     let _ = std::fs::write(&temp_file, current_body);
 
                     let _ = disable_raw_mode();

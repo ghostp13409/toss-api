@@ -598,6 +598,14 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
             }
         }
 
+        KeyCode::Char('c') => {
+            if app.focused_panel == FocusedPanel::Details
+                && app.selected_property_tab == PropertyTab::Body
+            {
+                app.cycle_raw_content_type();
+            }
+        }
+
         KeyCode::Char('t') => {
             if app.focused_panel == FocusedPanel::Details {
                 match app.selected_property_tab {

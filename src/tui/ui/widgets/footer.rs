@@ -239,6 +239,7 @@ pub fn render_footer(f: &mut Frame, app: &App, area: Rect) {
                         ("a", "Add"),
                         ("d", "Delete"),
                         ("t", "Type"),
+                        ("c", "Format"),
                         ("v", "Edit Body"),
                         ("y/p", "Cpy/Pst"),
                         ("Esc", "Back"),
