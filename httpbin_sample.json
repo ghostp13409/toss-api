@@ -1,0 +1,160 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-4a5b-b6c7-d8e9f0a1b2c3",
+    "name": "Httpbin Comprehensive Sample",
+    "description": "Comprehensive testing for httpbin.org covering all HTTP methods, headers, auth, and bodies.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "GET Methods",
+      "item": [
+        {
+          "name": "Detailed GET",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json", "type": "text" },
+              { "key": "X-Test-Header", "value": "TossAPI", "type": "text" }
+            ],
+            "url": {
+              "raw": "https://httpbin.org/get?param1=value1&param2=value2",
+              "protocol": "https",
+              "host": ["httpbin", "org"],
+              "path": ["get"],
+              "query": [
+                { "key": "param1", "value": "value1", "description": "First test parameter" },
+                { "key": "param2", "value": "value2", "description": "Second test parameter" }
+              ]
+            },
+            "description": "A GET request with multiple query parameters and custom headers."
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST Methods",
+      "item": [
+        {
+          "name": "POST JSON Body",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user\": {\n    \"name\": \"John Doe\",\n    \"email\": \"john@example.com\",\n    \"roles\": [\"admin\", \"tester\"]\n  },\n  \"timestamp\": \"2023-10-27T10:00:00Z\",\n  \"active\": true\n}"
+            },
+            "url": "https://httpbin.org/post"
+          }
+        },
+        {
+          "name": "POST Form Data (Multipart)",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "username", "value": "johndoe", "type": "text" },
+                { "key": "file_info", "value": "This is a test file description", "type": "text" }
+              ]
+            },
+            "url": "https://httpbin.org/post"
+          }
+        },
+        {
+          "name": "POST URL Encoded",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "key1", "value": "value1", "type": "text" },
+                { "key": "key2", "value": "value2", "type": "text" }
+              ]
+            },
+            "url": "https://httpbin.org/post"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update Methods",
+      "item": [
+        {
+          "name": "PUT Update",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"update_field\": \"new_value\"\n}"
+            },
+            "url": "https://httpbin.org/put"
+          }
+        },
+        {
+          "name": "PATCH Update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"partial_field\": \"patch_value\"\n}"
+            },
+            "url": "https://httpbin.org/patch"
+          }
+        }
+      ]
+    },
+    {
+      "name": "DELETE Methods",
+      "item": [
+        {
+          "name": "Simple DELETE",
+          "request": {
+            "method": "DELETE",
+            "url": "https://httpbin.org/delete"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Basic Authentication",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "user", "type": "string" },
+                { "key": "password", "value": "passwd", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "url": "https://httpbin.org/basic-auth/user/passwd"
+          }
+        },
+        {
+          "name": "Bearer Token Auth",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "my-secret-token", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "url": "https://httpbin.org/bearer"
+          }
+        }
+      ]
+    }
+  ]
+}

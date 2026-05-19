@@ -28,13 +28,13 @@ cargo install toss-api
 
 ### From GitHub
 ```bash
-cargo install --git https://github.com/ghostp13409/toss
+cargo install --git https://github.com/ghostp13409/toss-api
 ```
 
 ### From Source
 ```bash
-git clone https://github.com/ghostp13409/toss
-cd toss
+git clone https://github.com/ghostp13409/toss-api
+cd toss-api
 cargo install --path .
 ```
 
@@ -67,7 +67,7 @@ For quick actions without entering the UI:
 - `toss-api collections list`
 - `toss-api env show "My Collection"`
 
-Run `toss --help` for the full command list.
+Run `toss-api --help` for the full command list.
 
 ## 🗺️ Roadmap
 
