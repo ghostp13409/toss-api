@@ -119,7 +119,7 @@ pub fn handle_editing_mode(app: &mut App, key: KeyEvent) {
                     app.property_editor_field = PropertyEditorField::Value;
                 } else if app.selected_property_tab == PropertyTab::Body {
                     // For Body with FormData or XWwwFormUrlEncoded, don't have Description field
-                    if let Some(req) = app.get_current_request() {
+                    if let Some(_req) = app.get_current_request() {
                         if app.property_editor_field == PropertyEditorField::Key {
                             let current_val = app.get_kv_editor_value();
                             if current_val.trim().is_empty() {

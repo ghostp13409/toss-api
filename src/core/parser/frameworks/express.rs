@@ -21,6 +21,10 @@ impl ExpressParser {
             "string" => FieldType::String,
             "number" => FieldType::Number,
             "boolean" => FieldType::Boolean,
+            "date" => FieldType::DateTime,
+            t if t.contains("Record<") || t.contains("Map<") => {
+                FieldType::Map(Box::new(FieldType::String), Box::new(FieldType::Unknown))
+            }
             t if t.ends_with("[]") => {
                 let inner = &t[..t.len() - 2];
                 FieldType::Array(Box::new(Self::parse_ts_type(inner)))

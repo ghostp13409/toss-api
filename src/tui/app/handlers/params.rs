@@ -318,6 +318,19 @@ impl App {
         }
     }
 
+    pub fn cycle_raw_content_type(&mut self) {
+        if let Some(req) = self.get_current_request_mut() {
+            if req.body.selected == crate::core::collection::BodyType::Raw {
+                req.body.raw.content_type = match req.body.raw.content_type.as_str() {
+                    "application/json" => "application/xml".to_string(),
+                    "application/xml" => "text/html".to_string(),
+                    "text/html" => "text/plain".to_string(),
+                    _ => "application/json".to_string(),
+                };
+            }
+        }
+    }
+
     pub fn cycle_auth_type(&mut self) {
         if let Some(req) = self.get_current_request_mut() {
             req.auth.selected = match req.auth.selected {

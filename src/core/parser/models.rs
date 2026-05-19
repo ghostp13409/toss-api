@@ -8,6 +8,9 @@ pub enum FieldType {
     Boolean,
     Array(Box<FieldType>),
     Object(String), // Reference to another model
+    DateTime,
+    Enum(Vec<String>),
+    Map(Box<FieldType>, Box<FieldType>),
     Unknown,
 }
 
@@ -69,6 +72,19 @@ impl ModelRegistry {
             FieldType::String => json!("string"),
             FieldType::Number => json!(0),
             FieldType::Boolean => json!(true),
+            FieldType::DateTime => json!("2024-01-01T00:00:00Z"),
+            FieldType::Enum(values) => {
+                if let Some(first) = values.first() {
+                    json!(first)
+                } else {
+                    json!("ENUM_VALUE")
+                }
+            }
+            FieldType::Map(_, inner) => {
+                let mut map = serde_json::Map::new();
+                map.insert("key".to_string(), self.generate_field_value(inner, stack));
+                Value::Object(map)
+            }
             FieldType::Array(inner) => json!([self.generate_field_value(inner, stack)]),
             FieldType::Object(name) => self.generate_value(name, stack).unwrap_or(json!({})),
             FieldType::Unknown => json!(null),
