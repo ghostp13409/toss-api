@@ -134,7 +134,7 @@ impl SourceParser for ExpressParser {
                         _ => Method::Get,
                     };
 
-                    let mut body = RequestBody::None;
+                    let mut body = RequestBody::default();
 
                     // Try to extract body type from Request<..., ReqBody>
                     let start_pos = cap.get(0).unwrap().start();
@@ -149,10 +149,10 @@ impl SourceParser for ExpressParser {
                     if let Some(tcap) = req_type_regex.captures(search_area) {
                         let body_type = &tcap[1];
                         if let Some(json_body) = registry.generate_json(body_type) {
-                            body = RequestBody::Raw {
-                                content: json_body,
-                                content_type: "application/json".to_string(),
-                            };
+                            body = RequestBody::raw(
+                                json_body,
+                                "application/json".to_string(),
+                            );
                         }
                     }
 
@@ -163,7 +163,7 @@ impl SourceParser for ExpressParser {
                         url: format!("{{{{baseUrl}}}}{}", url_path),
                         params: Vec::new(),
                         headers: Vec::new(),
-                        auth: Auth::None,
+                        auth: Auth::default(),
                         body,
                         pre_request_script: None,
                         post_response_script: None,

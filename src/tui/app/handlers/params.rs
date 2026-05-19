@@ -1,7 +1,6 @@
 use super::super::enums::*;
 use super::super::state::App;
-use crate::core::collection::{Auth, KVParam, Request, RequestBody};
-use reqwest::Url;
+use crate::core::collection::{KVParam, Request};
 
 impl App {
     pub fn add_env_var(&mut self, key: String) {
@@ -36,7 +35,7 @@ impl App {
     // }
 
     pub fn sync_url_from_params(&mut self) {
-        let (params, base_url) = {
+        let (params, current_url) = {
             if let Some(req) = self.get_current_request() {
                 (req.params.clone(), req.url.clone())
             } else {
@@ -44,69 +43,81 @@ impl App {
             }
         };
 
-        // If the URL is empty, we can't really sync params into it effectively
-        if base_url.is_empty() {
+        if current_url.is_empty() {
             return;
         }
 
-        // Try to parse. If it fails, it might be a relative URL or missing scheme.
-        // We'll try to prepend a dummy scheme to parse it.
-        let has_scheme = base_url.contains("://");
-        let parse_url = if has_scheme {
-            base_url.clone()
+        // Split base URL and existing query
+        let base_url = if let Some(q_pos) = current_url.find('?') {
+            &current_url[..q_pos]
         } else {
-            format!("http://{}", base_url)
+            &current_url
         };
 
-        if let Ok(mut parsed_url) = Url::parse(&parse_url) {
-            parsed_url.query_pairs_mut().clear();
-            for param in &params {
-                if param.enabled && (!param.key.is_empty() || !param.value.is_empty()) {
-                    parsed_url
-                        .query_pairs_mut()
-                        .append_pair(&param.key, &param.value);
-                }
+        let mut query_parts = Vec::new();
+        for param in &params {
+            if param.enabled && (!param.key.is_empty() || !param.value.is_empty()) {
+                query_parts.push(format!("{}={}", param.key, param.value));
             }
+        }
 
-            let mut new_url = parsed_url.to_string();
-            // If we added a dummy scheme, strip it back
-            if !has_scheme {
-                new_url = new_url
-                    .strip_prefix("http://")
-                    .unwrap_or(&new_url)
-                    .to_string();
-            }
+        let new_url = if query_parts.is_empty() {
+            base_url.to_string()
+        } else {
+            format!("{}?{}", base_url, query_parts.join("&"))
+        };
 
-            self.url = new_url.clone();
-            if let Some(mut_req) = self.get_current_request_mut() {
-                mut_req.url = new_url;
-            }
+        self.url = new_url.clone();
+        if let Some(mut_req) = self.get_current_request_mut() {
+            mut_req.url = new_url;
         }
     }
 
     pub fn sync_params_from_url(&mut self) {
         let url_clone = self.url.clone();
-        let has_scheme = url_clone.contains("://");
-        let parse_url = if has_scheme {
-            url_clone.clone()
-        } else {
-            format!("http://{}", url_clone)
-        };
 
-        if let Ok(parsed_url) = Url::parse(&parse_url) {
-            let new_params: Vec<KVParam> = parsed_url
-                .query_pairs()
-                .map(|(k, v)| KVParam {
-                    key: k.into_owned(),
-                    value: v.into_owned(),
-                    enabled: true,
-                    description: None,
-                })
-                .collect();
+        // Always sync the URL string to the request model
+        if let Some(req) = self.get_current_request_mut() {
+            req.url = url_clone.clone();
+        }
+
+        // Extract query string manually to be robust against template variables in host/scheme
+        if let Some(q_pos) = url_clone.find('?') {
+            let query_str = &url_clone[q_pos + 1..];
+            let new_params: Vec<KVParam> = if query_str.is_empty() {
+                Vec::new()
+            } else {
+                query_str
+                    .split('&')
+                    .filter(|s| !s.is_empty())
+                    .map(|s| {
+                        let (k, v) = s.split_once('=').unwrap_or((s, ""));
+                        KVParam {
+                            key: k.to_string(),
+                            value: v.to_string(),
+                            enabled: true,
+                            description: None,
+                        }
+                    })
+                    .collect()
+            };
 
             if let Some(req) = self.get_current_request_mut() {
-                req.params = new_params;
-                req.url = url_clone;
+                // We want to preserve descriptions and enabled status if possible
+                let mut merged_params = Vec::new();
+                for mut new_p in new_params {
+                    if let Some(existing) = req.params.iter().find(|p| p.key == new_p.key) {
+                        new_p.description = existing.description.clone();
+                        new_p.enabled = existing.enabled;
+                    }
+                    merged_params.push(new_p);
+                }
+                req.params = merged_params;
+            }
+        } else {
+            // No query string, clear params if they came from the URL
+            if let Some(req) = self.get_current_request_mut() {
+                req.params.clear();
             }
         }
     }
@@ -129,9 +140,11 @@ impl App {
             let target = match tab {
                 PropertyTab::Params => &mut req.params,
                 PropertyTab::Headers => &mut req.headers,
-                PropertyTab::Body => match &mut req.body {
-                    RequestBody::FormData { items } => items,
-                    RequestBody::XWwwFormUrlEncoded { items } => items,
+                PropertyTab::Body => match req.body.selected {
+                    crate::core::collection::BodyType::FormData => &mut req.body.form_data.items,
+                    crate::core::collection::BodyType::XWwwFormUrlEncoded => {
+                        &mut req.body.x_www_form_urlencoded.items
+                    }
                     _ => return,
                 },
                 _ => return,
@@ -157,9 +170,11 @@ impl App {
             let target = match tab {
                 PropertyTab::Params => &mut req.params,
                 PropertyTab::Headers => &mut req.headers,
-                PropertyTab::Body => match &mut req.body {
-                    RequestBody::FormData { items } => items,
-                    RequestBody::XWwwFormUrlEncoded { items } => items,
+                PropertyTab::Body => match req.body.selected {
+                    crate::core::collection::BodyType::FormData => &mut req.body.form_data.items,
+                    crate::core::collection::BodyType::XWwwFormUrlEncoded => {
+                        &mut req.body.x_www_form_urlencoded.items
+                    }
                     _ => return,
                 },
                 _ => return,
@@ -177,9 +192,9 @@ impl App {
     pub fn toggle_auth_bool(&mut self) {
         let row = self.property_editor_row;
         if let Some(req) = self.get_current_request_mut() {
-            if let Auth::ApiKey { in_header, .. } = &mut req.auth {
+            if req.auth.selected == crate::core::collection::AuthType::ApiKey {
                 if row == 2 {
-                    *in_header = !*in_header;
+                    req.auth.api_key.in_header = !req.auth.api_key.in_header;
                 }
             }
         }
@@ -209,33 +224,29 @@ impl App {
                         }
                     }
                 }
-                PropertyTab::Auth => match &mut req.auth {
-                    Auth::Bearer { token } => *token = value,
-                    Auth::Basic { username, password } => {
+                PropertyTab::Auth => match req.auth.selected {
+                    crate::core::collection::AuthType::Bearer => req.auth.bearer.token = value,
+                    crate::core::collection::AuthType::Basic => {
                         if row == 0 {
-                            *username = value;
+                            req.auth.basic.username = value;
                         } else {
-                            *password = value;
+                            req.auth.basic.password = value;
                         }
                     }
-                    Auth::ApiKey {
-                        key,
-                        value: v,
-                        in_header,
-                    } => {
+                    crate::core::collection::AuthType::ApiKey => {
                         if row == 0 {
-                            *key = value;
+                            req.auth.api_key.key = value;
                         } else if row == 1 {
-                            *v = value;
+                            req.auth.api_key.value = value;
                         } else {
-                            *in_header = value.to_lowercase() == "true";
+                            req.auth.api_key.in_header = value.to_lowercase() == "true";
                         }
                     }
                     _ => {}
                 },
-                PropertyTab::Body => match &mut req.body {
-                    RequestBody::FormData { items } => {
-                        if let Some(p) = items.get_mut(row) {
+                PropertyTab::Body => match req.body.selected {
+                    crate::core::collection::BodyType::FormData => {
+                        if let Some(p) = req.body.form_data.items.get_mut(row) {
                             match field {
                                 PropertyEditorField::Key => p.key = value,
                                 PropertyEditorField::Value => p.value = value,
@@ -243,8 +254,8 @@ impl App {
                             }
                         }
                     }
-                    RequestBody::XWwwFormUrlEncoded { items } => {
-                        if let Some(p) = items.get_mut(row) {
+                    crate::core::collection::BodyType::XWwwFormUrlEncoded => {
+                        if let Some(p) = req.body.x_www_form_urlencoded.items.get_mut(row) {
                             match field {
                                 PropertyEditorField::Key => p.key = value,
                                 PropertyEditorField::Value => p.value = value,
@@ -269,9 +280,11 @@ impl App {
             let target = match tab {
                 PropertyTab::Params => &mut req.params,
                 PropertyTab::Headers => &mut req.headers,
-                PropertyTab::Body => match &mut req.body {
-                    RequestBody::FormData { items } => items,
-                    RequestBody::XWwwFormUrlEncoded { items } => items,
+                PropertyTab::Body => match req.body.selected {
+                    crate::core::collection::BodyType::FormData => &mut req.body.form_data.items,
+                    crate::core::collection::BodyType::XWwwFormUrlEncoded => {
+                        &mut req.body.x_www_form_urlencoded.items
+                    }
                     _ => return,
                 },
                 _ => return,
@@ -287,36 +300,37 @@ impl App {
 
     pub fn cycle_body_type(&mut self) {
         if let Some(req) = self.get_current_request_mut() {
-            req.body = match req.body {
-                RequestBody::None => RequestBody::Raw {
-                    content: String::new(),
-                    content_type: "application/json".to_string(),
-                },
-                RequestBody::Raw { .. } => RequestBody::FormData { items: Vec::new() },
-                RequestBody::FormData { .. } => {
-                    RequestBody::XWwwFormUrlEncoded { items: Vec::new() }
+            req.body.selected = match req.body.selected {
+                crate::core::collection::BodyType::None => crate::core::collection::BodyType::Raw,
+                crate::core::collection::BodyType::Raw => crate::core::collection::BodyType::FormData,
+                crate::core::collection::BodyType::FormData => {
+                    crate::core::collection::BodyType::XWwwFormUrlEncoded
                 }
-                RequestBody::XWwwFormUrlEncoded { .. } => RequestBody::None,
+                crate::core::collection::BodyType::XWwwFormUrlEncoded => {
+                    crate::core::collection::BodyType::None
+                }
             };
+            if req.body.selected == crate::core::collection::BodyType::Raw
+                && req.body.raw.content_type.is_empty()
+            {
+                req.body.raw.content_type = "application/json".to_string();
+            }
         }
     }
 
     pub fn cycle_auth_type(&mut self) {
         if let Some(req) = self.get_current_request_mut() {
-            req.auth = match req.auth {
-                Auth::None => Auth::Bearer {
-                    token: String::new(),
-                },
-                Auth::Bearer { .. } => Auth::Basic {
-                    username: String::new(),
-                    password: String::new(),
-                },
-                Auth::Basic { .. } => Auth::ApiKey {
-                    key: String::new(),
-                    value: String::new(),
-                    in_header: true,
-                },
-                Auth::ApiKey { .. } => Auth::None,
+            req.auth.selected = match req.auth.selected {
+                crate::core::collection::AuthType::None => crate::core::collection::AuthType::Bearer,
+                crate::core::collection::AuthType::Bearer => {
+                    crate::core::collection::AuthType::Basic
+                }
+                crate::core::collection::AuthType::Basic => {
+                    crate::core::collection::AuthType::ApiKey
+                }
+                crate::core::collection::AuthType::ApiKey => {
+                    crate::core::collection::AuthType::None
+                }
             };
         }
     }
@@ -346,33 +360,45 @@ impl App {
                         };
                     }
                 }
-                PropertyTab::Auth => match &req.auth {
-                    Auth::Bearer { token } => return token.clone(),
-                    Auth::Basic { username, password } => {
+                PropertyTab::Auth => match req.auth.selected {
+                    crate::core::collection::AuthType::Bearer => return req.auth.bearer.token.clone(),
+                    crate::core::collection::AuthType::Basic => {
                         if self.property_editor_row == 0 {
-                            return username.clone();
+                            return req.auth.basic.username.clone();
                         } else {
-                            return password.clone();
+                            return req.auth.basic.password.clone();
                         }
                     }
-                    Auth::ApiKey { key, value, .. } => {
+                    crate::core::collection::AuthType::ApiKey => {
                         if self.property_editor_row == 0 {
-                            return key.clone();
+                            return req.auth.api_key.key.clone();
                         } else if self.property_editor_row == 1 {
-                            return value.clone();
+                            return req.auth.api_key.value.clone();
                         } else {
-                            // "In Header" is bool, returning as string
-                            match &req.auth {
-                                Auth::ApiKey { in_header, .. } => return in_header.to_string(),
-                                _ => {}
-                            }
+                            return req.auth.api_key.in_header.to_string();
                         }
                     }
                     _ => {}
                 },
-                PropertyTab::Body => match &req.body {
-                    RequestBody::FormData { items } | RequestBody::XWwwFormUrlEncoded { items } => {
-                        if let Some(p) = items.get(self.property_editor_row) {
+                PropertyTab::Body => match req.body.selected {
+                    crate::core::collection::BodyType::FormData => {
+                        if let Some(p) = req.body.form_data.items.get(self.property_editor_row) {
+                            return match self.property_editor_field {
+                                PropertyEditorField::Key => p.key.clone(),
+                                PropertyEditorField::Value => p.value.clone(),
+                                PropertyEditorField::Description => {
+                                    p.description.clone().unwrap_or_default()
+                                }
+                            };
+                        }
+                    }
+                    crate::core::collection::BodyType::XWwwFormUrlEncoded => {
+                        if let Some(p) = req
+                            .body
+                            .x_www_form_urlencoded
+                            .items
+                            .get(self.property_editor_row)
+                        {
                             return match self.property_editor_field {
                                 PropertyEditorField::Key => p.key.clone(),
                                 PropertyEditorField::Value => p.value.clone(),

@@ -1,7 +1,7 @@
 use super::enums::*;
 use super::state::App;
 use crate::cli::args::Method;
-use crate::core::collection::{Collection, CollectionItem, KVParam};
+use crate::core::collection::{CollectionItem, KVParam};
 use ratatui::widgets::{ListState, TableState};
 use std::collections::HashMap;
 
@@ -179,23 +179,6 @@ impl App {
                 }
             }
         }
-    }
-
-    pub fn load_sample_data(&mut self) {
-        let mut col = Collection::new("Sample Collection".to_string());
-        let mut req = crate::core::collection::Request::new(
-            "Get Sample".to_string(),
-            Method::Get,
-            "https://httpbin.org/get".to_string(),
-        );
-        req.params.push(KVParam {
-            key: "foo".to_string(),
-            value: "bar".to_string(),
-            enabled: true,
-            description: None,
-        });
-        col.items.push(CollectionItem::Request(req));
-        self.collections.push(col);
     }
 
     pub fn import_collection(&mut self, path: &str) {

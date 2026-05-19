@@ -36,36 +36,172 @@ pub struct KVParam {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum Auth {
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+pub enum AuthType {
     None,
-    Bearer {
-        token: String,
-    },
-    Basic {
-        username: String,
-        password: String,
-    },
-    ApiKey {
-        key: String,
-        value: String,
-        in_header: bool,
-    },
+    Bearer,
+    Basic,
+    ApiKey,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum RequestBody {
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+pub struct BearerAuth {
+    pub token: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+pub struct BasicAuth {
+    pub username: String,
+    pub password: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+pub struct ApiKeyAuth {
+    pub key: String,
+    pub value: String,
+    pub in_header: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+pub struct Auth {
+    pub selected: AuthType,
+    pub bearer: BearerAuth,
+    pub basic: BasicAuth,
+    pub api_key: ApiKeyAuth,
+}
+
+impl Default for AuthType {
+    fn default() -> Self {
+        Self::None
+    }
+}
+
+impl Auth {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn bearer(token: String) -> Self {
+        Self {
+            selected: AuthType::Bearer,
+            bearer: BearerAuth { token },
+            ..Default::default()
+        }
+    }
+
+    pub fn basic(username: String, password: String) -> Self {
+        Self {
+            selected: AuthType::Basic,
+            basic: BasicAuth { username, password },
+            ..Default::default()
+        }
+    }
+
+    pub fn api_key(key: String, value: String, in_header: bool) -> Self {
+        Self {
+            selected: AuthType::ApiKey,
+            api_key: ApiKeyAuth {
+                key,
+                value,
+                in_header,
+            },
+            ..Default::default()
+        }
+    }
+
+    pub fn auto_select(&mut self) {
+        if self.selected != AuthType::None {
+            return;
+        }
+
+        if !self.bearer.token.is_empty() {
+            self.selected = AuthType::Bearer;
+        } else if !self.basic.username.is_empty() || !self.basic.password.is_empty() {
+            self.selected = AuthType::Basic;
+        } else if !self.api_key.key.is_empty() || !self.api_key.value.is_empty() {
+            self.selected = AuthType::ApiKey;
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+pub enum BodyType {
     None,
-    Raw {
-        content: String,
-        content_type: String,
-    },
-    FormData {
-        items: Vec<KVParam>,
-    },
-    XWwwFormUrlEncoded {
-        items: Vec<KVParam>,
-    },
+    Raw,
+    FormData,
+    XWwwFormUrlEncoded,
+}
+
+impl Default for BodyType {
+    fn default() -> Self {
+        Self::None
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+pub struct RawBody {
+    pub content: String,
+    pub content_type: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+pub struct FormDataBody {
+    pub items: Vec<KVParam>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+pub struct RequestBody {
+    pub selected: BodyType,
+    pub raw: RawBody,
+    pub form_data: FormDataBody,
+    pub x_www_form_urlencoded: FormDataBody,
+}
+
+impl RequestBody {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn raw(content: String, content_type: String) -> Self {
+        Self {
+            selected: BodyType::Raw,
+            raw: RawBody {
+                content,
+                content_type,
+            },
+            ..Default::default()
+        }
+    }
+
+    pub fn form_data(items: Vec<KVParam>) -> Self {
+        Self {
+            selected: BodyType::FormData,
+            form_data: FormDataBody { items },
+            ..Default::default()
+        }
+    }
+
+    pub fn x_www_form_urlencoded(items: Vec<KVParam>) -> Self {
+        Self {
+            selected: BodyType::XWwwFormUrlEncoded,
+            x_www_form_urlencoded: FormDataBody { items },
+            ..Default::default()
+        }
+    }
+
+    pub fn auto_select(&mut self) {
+        if self.selected != BodyType::None {
+            return;
+        }
+
+        if !self.raw.content.is_empty() {
+            self.selected = BodyType::Raw;
+        } else if !self.form_data.items.is_empty() {
+            self.selected = BodyType::FormData;
+        } else if !self.x_www_form_urlencoded.items.is_empty() {
+            self.selected = BodyType::XWwwFormUrlEncoded;
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -250,8 +386,8 @@ impl Request {
             url,
             params: Vec::new(),
             headers: Vec::new(),
-            auth: Auth::None,
-            body: RequestBody::None,
+            auth: Auth::default(),
+            body: RequestBody::default(),
             pre_request_script: None,
             post_response_script: None,
         }

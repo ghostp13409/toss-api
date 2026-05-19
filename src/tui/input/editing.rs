@@ -44,7 +44,7 @@ pub fn handle_editing_mode(app: &mut App, key: KeyEvent) {
                         app.input_mode = InputMode::Normal;
                         app.property_editor_field = PropertyEditorField::Key;
                     }
-                    PropertyTab::Params | PropertyTab::Headers | PropertyTab::Body => {
+                    PropertyTab::Params | PropertyTab::Headers => {
                         match app.property_editor_field {
                             PropertyEditorField::Key => {
                                 let current_val = app.get_kv_editor_value();
@@ -67,6 +67,26 @@ pub fn handle_editing_mode(app: &mut App, key: KeyEvent) {
                             }
                         }
                     }
+                    PropertyTab::Body => {
+                        match app.property_editor_field {
+                            PropertyEditorField::Key => {
+                                let current_val = app.get_kv_editor_value();
+                                if current_val.trim().is_empty() {
+                                    app.error_message = Some("Key cannot be empty".to_string());
+                                    return;
+                                }
+                                app.property_editor_field = PropertyEditorField::Value;
+                                let current_val = app.get_kv_editor_value();
+                                app.cursor_position = current_val.len();
+                            }
+                            PropertyEditorField::Value | PropertyEditorField::Description => {
+                                // For Body (FormData/XWwwFormUrlEncoded), exit immediately on Value
+                                // since there's no Description field
+                                app.input_mode = InputMode::Normal;
+                                app.property_editor_field = PropertyEditorField::Key;
+                            }
+                        }
+                    }
                     _ => app.pop_up(),
                 }
             } else if app.focused_panel == FocusedPanel::Environments {
@@ -81,11 +101,8 @@ pub fn handle_editing_mode(app: &mut App, key: KeyEvent) {
                         let current_val = app.get_env_editor_value();
                         app.cursor_position = current_val.len();
                     }
-                    PropertyEditorField::Value => {
-                        app.input_mode = InputMode::Normal;
-                        app.property_editor_field = PropertyEditorField::Key;
-                    }
-                    _ => {
+                    PropertyEditorField::Value | PropertyEditorField::Description => {
+                        // Exit immediately when pressing Enter on Value or Description field
                         app.input_mode = InputMode::Normal;
                         app.property_editor_field = PropertyEditorField::Key;
                     }
@@ -100,6 +117,24 @@ pub fn handle_editing_mode(app: &mut App, key: KeyEvent) {
                 if app.selected_property_tab == PropertyTab::Auth {
                     // Don't cycle fields in Auth tab, just keep focus on Value
                     app.property_editor_field = PropertyEditorField::Value;
+                } else if app.selected_property_tab == PropertyTab::Body {
+                    // For Body with FormData or XWwwFormUrlEncoded, don't have Description field
+                    if let Some(req) = app.get_current_request() {
+                        if app.property_editor_field == PropertyEditorField::Key {
+                            let current_val = app.get_kv_editor_value();
+                            if current_val.trim().is_empty() {
+                                app.error_message = Some("Key cannot be empty".to_string());
+                                return;
+                            }
+                            app.property_editor_field = PropertyEditorField::Value;
+                        } else if app.property_editor_field == PropertyEditorField::Value {
+                            // Exit instead of cycling to non-existent Description
+                            app.save_current_request();
+                            app.input_mode = InputMode::Normal;
+                            app.property_editor_field = PropertyEditorField::Key;
+                            return;
+                        }
+                    }
                 } else {
                     if app.property_editor_field == PropertyEditorField::Key {
                         let current_val = app.get_kv_editor_value();

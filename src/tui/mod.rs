@@ -44,9 +44,8 @@ pub async fn run_tui() -> Result<(), Box<dyn std::error::Error>> {
     let mut app = App::new();
 
     let persistence = crate::core::persistence::PersistenceManager::new();
-    match persistence.load_collections() {
-        Ok(cols) if !cols.is_empty() => app.collections = cols,
-        _ => app.load_sample_data(),
+    if let Ok(cols) = persistence.load_collections() {
+        app.collections = cols;
     }
 
     let res = run_app(&mut terminal, &mut app).await;
@@ -166,45 +165,40 @@ where
                         }
 
                         let mut body_type = req.body.clone();
-                        match &mut body_type {
-                            crate::core::collection::RequestBody::Raw { content, .. } => {
-                                *content = env.replace_vars(content);
+                        match body_type.selected {
+                            crate::core::collection::BodyType::Raw => {
+                                body_type.raw.content = env.replace_vars(&body_type.raw.content);
                             }
-                            crate::core::collection::RequestBody::FormData { items }
-                            | crate::core::collection::RequestBody::XWwwFormUrlEncoded { items } => {
-                                for item in items {
+                            crate::core::collection::BodyType::FormData => {
+                                for item in &mut body_type.form_data.items {
                                     item.key = env.replace_vars(&item.key);
                                     item.value = env.replace_vars(&item.value);
                                 }
                             }
-                            crate::core::collection::RequestBody::None => {}
+                            crate::core::collection::BodyType::XWwwFormUrlEncoded => {
+                                for item in &mut body_type.x_www_form_urlencoded.items {
+                                    item.key = env.replace_vars(&item.key);
+                                    item.value = env.replace_vars(&item.value);
+                                }
+                            }
+                            _ => {}
                         }
 
-                        let auth = match req.auth.clone() {
-                            crate::core::collection::Auth::Bearer { token } => {
-                                crate::core::collection::Auth::Bearer {
-                                    token: env.replace_vars(&token),
-                                }
+                        let mut auth = req.auth.clone();
+                        match auth.selected {
+                            crate::core::collection::AuthType::Bearer => {
+                                auth.bearer.token = env.replace_vars(&auth.bearer.token);
                             }
-                            crate::core::collection::Auth::Basic { username, password } => {
-                                crate::core::collection::Auth::Basic {
-                                    username: env.replace_vars(&username),
-                                    password: env.replace_vars(&password),
-                                }
+                            crate::core::collection::AuthType::Basic => {
+                                auth.basic.username = env.replace_vars(&auth.basic.username);
+                                auth.basic.password = env.replace_vars(&auth.basic.password);
                             }
-                            crate::core::collection::Auth::ApiKey {
-                                key,
-                                value,
-                                in_header,
-                            } => crate::core::collection::Auth::ApiKey {
-                                key: env.replace_vars(&key),
-                                value: env.replace_vars(&value),
-                                in_header,
-                            },
-                            crate::core::collection::Auth::None => {
-                                crate::core::collection::Auth::None
+                            crate::core::collection::AuthType::ApiKey => {
+                                auth.api_key.key = env.replace_vars(&auth.api_key.key);
+                                auth.api_key.value = env.replace_vars(&auth.api_key.value);
                             }
-                        };
+                            _ => {}
+                        }
 
                         let tx_res = tx.clone();
                         let final_url = url.clone();
@@ -282,10 +276,8 @@ where
                 }
                 TuiAction::EditBody => {
                     let (req_id, current_body) = if let Some(req) = app.get_current_request() {
-                        let body = match &req.body {
-                            crate::core::collection::RequestBody::Raw { content, .. } => {
-                                content.clone()
-                            }
+                        let body = match req.body.selected {
+                            crate::core::collection::BodyType::Raw => req.body.raw.content.clone(),
                             _ => String::new(),
                         };
                         (req.id.clone(), body)
@@ -307,10 +299,11 @@ where
                     if let Ok(new_body) = std::fs::read_to_string(&temp_file) {
                         if let Some(col) = app.collections.get_mut(app.active_collection_index) {
                             if let Some(req_mut) = col.find_request_mut(&req_id) {
-                                req_mut.body = crate::core::collection::RequestBody::Raw {
-                                    content: new_body,
-                                    content_type: "application/json".to_string(), // default
-                                };
+                                req_mut.body.selected = crate::core::collection::BodyType::Raw;
+                                req_mut.body.raw.content = new_body;
+                                if req_mut.body.raw.content_type.is_empty() {
+                                    req_mut.body.raw.content_type = "application/json".to_string();
+                                }
                             }
                         }
                     }
@@ -324,10 +317,8 @@ where
                 }
                 TuiAction::CopyBody => {
                     if let Some(req) = app.get_current_request() {
-                        let body = match &req.body {
-                            crate::core::collection::RequestBody::Raw { content, .. } => {
-                                content.clone()
-                            }
+                        let body = match req.body.selected {
+                            crate::core::collection::BodyType::Raw => req.body.raw.content.clone(),
                             _ => String::new(),
                         };
                         if let Some(cb) = clipboard.as_mut() {
@@ -348,10 +339,13 @@ where
                                 {
                                     if let Some(req_id) = &app.current_request_id {
                                         if let Some(req_mut) = col.find_request_mut(req_id) {
-                                            req_mut.body = crate::core::collection::RequestBody::Raw {
-                                                content: text,
-                                                content_type: "application/json".to_string(),
-                                            };
+                                            req_mut.body.selected =
+                                                crate::core::collection::BodyType::Raw;
+                                            req_mut.body.raw.content = text;
+                                            if req_mut.body.raw.content_type.is_empty() {
+                                                req_mut.body.raw.content_type =
+                                                    "application/json".to_string();
+                                            }
                                             app.notify("Body pasted from clipboard");
                                         }
                                     }

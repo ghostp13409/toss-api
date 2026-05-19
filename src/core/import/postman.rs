@@ -44,6 +44,23 @@ fn parse_item(item: &Value) -> Option<CollectionItem> {
             _ => Method::Get,
         };
 
+        // Extract params from 'query' array if it exists
+        let mut query_params = Vec::new();
+        if let Some(url_val) = request.get("url") {
+            if let Some(query_array) = url_val.get("query")
+                && let Some(query_list) = query_array.as_array()
+            {
+                for q in query_list {
+                    query_params.push(KVParam {
+                        key: q["key"].as_str().unwrap_or("").to_string(),
+                        value: q["value"].as_str().unwrap_or("").to_string(),
+                        enabled: !q["disabled"].as_bool().unwrap_or(false),
+                        description: q["description"].as_str().map(|s| s.to_string()),
+                    });
+                }
+            }
+        }
+
         let url = if let Some(url_val) = request.get("url") {
             if let Some(raw) = url_val.get("raw") {
                 raw.as_str().unwrap_or("").to_string()
@@ -55,6 +72,35 @@ fn parse_item(item: &Value) -> Option<CollectionItem> {
         } else {
             String::new()
         };
+
+        let mut params = Vec::new();
+        // Parse the URL for parameters
+        if !url.is_empty() {
+            if let Some(q_pos) = url.find('?') {
+                let query_str = &url[q_pos + 1..];
+                for s in query_str.split('&').filter(|s| !s.is_empty()) {
+                    let (k, v) = s.split_once('=').unwrap_or((s, ""));
+                    let mut p = KVParam {
+                        key: k.to_string(),
+                        value: v.to_string(),
+                        enabled: true,
+                        description: None,
+                    };
+
+                    // Enrich with info from Postman's query array if available
+                    if let Some(existing) = query_params.iter().find(|qp| qp.key == p.key) {
+                        p.enabled = existing.enabled;
+                        p.description = existing.description.clone();
+                    }
+                    params.push(p);
+                }
+            }
+        }
+
+        // If URL parsing didn't find any params but query_params has some, use those
+        if params.is_empty() && !query_params.is_empty() {
+            params = query_params;
+        }
 
         let mut headers = Vec::new();
         if let Some(header_array) = request.get("header")
@@ -72,19 +118,20 @@ fn parse_item(item: &Value) -> Option<CollectionItem> {
 
         let body = if let Some(body_val) = request.get("body") {
             if body_val["mode"] == "raw" {
-                RequestBody::Raw {
-                    content: body_val["raw"].as_str().unwrap_or("").to_string(),
-                    content_type: body_val["options"]["raw"]["language"]
+                RequestBody::raw(
+                    body_val["raw"].as_str().unwrap_or("").to_string(),
+                    body_val["options"]["raw"]["language"]
                         .as_str()
                         .unwrap_or("json")
                         .to_string(),
-                }
+                )
             } else {
-                RequestBody::None
+                RequestBody::default()
             }
         } else {
-            RequestBody::None
+            RequestBody::default()
         };
+
 
         Some(CollectionItem::Request(Request {
             id: uuid::Uuid::new_v4().to_string(),
@@ -92,8 +139,8 @@ fn parse_item(item: &Value) -> Option<CollectionItem> {
             method,
             url,
             headers,
-            params: Vec::new(),
-            auth: Auth::None,
+            params,
+            auth: Auth::default(),
             body,
             pre_request_script: None,
             post_response_script: None,

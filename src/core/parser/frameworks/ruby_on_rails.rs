@@ -51,8 +51,8 @@ impl SourceParser for RubyOnRailsParser {
                     url: format!("{{{{baseUrl}}}}/{}", url_path.trim_start_matches('/')),
                     params: Vec::new(),
                     headers: Vec::new(),
-                    auth: Auth::None,
-                    body: RequestBody::None,
+                    auth: Auth::default(),
+                    body: RequestBody::default(),
                     pre_request_script: None,
                     post_response_script: None,
                 }));

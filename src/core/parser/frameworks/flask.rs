@@ -121,7 +121,7 @@ impl SourceParser for FlaskParser {
                             _ => Method::Get,
                         };
 
-                        let mut body = RequestBody::None;
+                        let mut body = RequestBody::default();
                         if method == Method::Post
                             || method == Method::Put
                             || method == Method::Patch
@@ -135,12 +135,11 @@ impl SourceParser for FlaskParser {
                                     if var_name.to_lowercase().contains(&model_name.to_lowercase())
                                         || model_name.to_lowercase().contains(var_name)
                                     {
-                                        if let Some(json_body) = registry.generate_json(model_name)
-                                        {
-                                            body = RequestBody::Raw {
-                                                content: json_body,
-                                                content_type: "application/json".to_string(),
-                                            };
+                                        if let Some(json_body) = registry.generate_json(model_name) {
+                                            body = RequestBody::raw(
+                                                json_body,
+                                                "application/json".to_string(),
+                                            );
                                             break;
                                         }
                                     }
@@ -155,7 +154,7 @@ impl SourceParser for FlaskParser {
                             url: format!("{{{{baseUrl}}}}{}", url_path),
                             params: Vec::new(),
                             headers: Vec::new(),
-                            auth: Auth::None,
+                            auth: Auth::default(),
                             body,
                             pre_request_script: None,
                             post_response_script: None,

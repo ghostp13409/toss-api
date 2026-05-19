@@ -471,18 +471,12 @@ pub fn render_details_area(f: &mut Frame, app: &mut App, area: Rect) {
             let auth = app
                 .get_current_request()
                 .map(|r| r.auth.clone())
-                .unwrap_or(crate::core::collection::Auth::None);
-            let title = match auth {
-                crate::core::collection::Auth::None => " Auth: None (Press 't' to change) ",
-                crate::core::collection::Auth::Bearer { .. } => {
-                    " Auth: Bearer (Press 't' to change) "
-                }
-                crate::core::collection::Auth::Basic { .. } => {
-                    " Auth: Basic (Press 't' to change) "
-                }
-                crate::core::collection::Auth::ApiKey { .. } => {
-                    " Auth: ApiKey (Press 't' to change) "
-                }
+                .unwrap_or_default();
+            let title = match auth.selected {
+                crate::core::collection::AuthType::None => " Auth: None (Press 't' to change) ",
+                crate::core::collection::AuthType::Bearer => " Auth: Bearer (Press 't' to change) ",
+                crate::core::collection::AuthType::Basic => " Auth: Basic (Press 't' to change) ",
+                crate::core::collection::AuthType::ApiKey => " Auth: ApiKey (Press 't' to change) ",
             };
             let block = create_block(
                 title_with_key("U", title),
@@ -490,54 +484,50 @@ pub fn render_details_area(f: &mut Frame, app: &mut App, area: Rect) {
             );
 
             let mut kv_params = Vec::new();
-            match auth {
-                crate::core::collection::Auth::None => {
+            match auth.selected {
+                crate::core::collection::AuthType::None => {
                     f.render_widget(Paragraph::new(" No authentication ").block(block), area);
                 }
-                crate::core::collection::Auth::Bearer { token } => {
+                crate::core::collection::AuthType::Bearer => {
                     kv_params.push(crate::core::collection::KVParam {
                         key: "Token".to_string(),
-                        value: token,
+                        value: auth.bearer.token,
                         enabled: true,
                         description: None,
                     });
                     render_kv_editor(f, app, area, title_with_key("U", title), &kv_params, false);
                 }
-                crate::core::collection::Auth::Basic { username, password } => {
+                crate::core::collection::AuthType::Basic => {
                     kv_params.push(crate::core::collection::KVParam {
                         key: "Username".to_string(),
-                        value: username,
+                        value: auth.basic.username,
                         enabled: true,
                         description: None,
                     });
                     kv_params.push(crate::core::collection::KVParam {
                         key: "Password".to_string(),
-                        value: password,
+                        value: auth.basic.password,
                         enabled: true,
                         description: None,
                     });
                     render_kv_editor(f, app, area, title_with_key("U", title), &kv_params, false);
                 }
-                crate::core::collection::Auth::ApiKey {
-                    key,
-                    value,
-                    in_header,
-                } => {
+                crate::core::collection::AuthType::ApiKey => {
                     kv_params.push(crate::core::collection::KVParam {
                         key: "Key".to_string(),
-                        value: key,
+                        value: auth.api_key.key,
                         enabled: true,
                         description: None,
                     });
                     kv_params.push(crate::core::collection::KVParam {
                         key: "Value".to_string(),
-                        value: value,
+                        value: auth.api_key.value,
                         enabled: true,
                         description: None,
                     });
                     kv_params.push(crate::core::collection::KVParam {
                         key: "In Header".to_string(),
-                        value: in_header.to_string(),
+                        value: auth.api_key.in_header.to_string(),
                         enabled: true,
                         description: None,
                     });
@@ -549,40 +539,38 @@ pub fn render_details_area(f: &mut Frame, app: &mut App, area: Rect) {
             let body = app
                 .get_current_request()
                 .map(|r| r.body.clone())
-                .unwrap_or(crate::core::collection::RequestBody::None);
-            let title = match body {
-                crate::core::collection::RequestBody::None => " Body: None (Press 't' to change) ",
-                crate::core::collection::RequestBody::Raw { .. } => {
-                    " Body: Raw (Press 't' to change) "
-                }
-                crate::core::collection::RequestBody::FormData { .. } => {
+                .unwrap_or_default();
+            let title = match body.selected {
+                crate::core::collection::BodyType::None => " Body: None (Press 't' to change) ",
+                crate::core::collection::BodyType::Raw => " Body: Raw (Press 't' to change) ",
+                crate::core::collection::BodyType::FormData => {
                     " Body: Form Data (Press 't' to change) "
                 }
-                crate::core::collection::RequestBody::XWwwFormUrlEncoded { .. } => {
+                crate::core::collection::BodyType::XWwwFormUrlEncoded => {
                     " Body: x-www-form-urlencoded (Press 't' to change) "
                 }
             };
 
-            match body {
-                crate::core::collection::RequestBody::None => {
+            match body.selected {
+                crate::core::collection::BodyType::None => {
                     let block = create_block(
                         title_with_key("B", title),
                         app.focused_panel == FocusedPanel::Details,
                     );
                     f.render_widget(Paragraph::new(" No body ").block(block), area);
                 }
-                crate::core::collection::RequestBody::Raw {
-                    content,
-                    content_type,
-                } => {
+                crate::core::collection::BodyType::Raw => {
                     let block = create_block(
                         title_with_key("B", title),
                         app.focused_panel == FocusedPanel::Details,
                     );
 
-                    let formatted_body = format_content(&content, Some(content_type.as_str()));
-                    let mut highlighted_body =
-                        highlight_content(&formatted_body, Some(content_type.as_str()));
+                    let formatted_body =
+                        format_content(&body.raw.content, Some(body.raw.content_type.as_str()));
+                    let mut highlighted_body = highlight_content(
+                        &formatted_body,
+                        Some(body.raw.content_type.as_str()),
+                    );
                     apply_env_vars(&mut highlighted_body);
 
                     let p = Paragraph::new(highlighted_body)
@@ -591,11 +579,25 @@ pub fn render_details_area(f: &mut Frame, app: &mut App, area: Rect) {
                         .wrap(Wrap { trim: false });
                     f.render_widget(p, area);
                 }
-                crate::core::collection::RequestBody::FormData { items } => {
-                    render_kv_editor(f, app, area, title_with_key("B", title), &items, false);
+                crate::core::collection::BodyType::FormData => {
+                    render_kv_editor(
+                        f,
+                        app,
+                        area,
+                        title_with_key("B", title),
+                        &body.form_data.items,
+                        false,
+                    );
                 }
-                crate::core::collection::RequestBody::XWwwFormUrlEncoded { items } => {
-                    render_kv_editor(f, app, area, title_with_key("B", title), &items, false);
+                crate::core::collection::BodyType::XWwwFormUrlEncoded => {
+                    render_kv_editor(
+                        f,
+                        app,
+                        area,
+                        title_with_key("B", title),
+                        &body.x_www_form_urlencoded.items,
+                        false,
+                    );
                 }
             }
         }
