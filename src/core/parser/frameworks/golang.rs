@@ -120,7 +120,7 @@ impl SourceParser for GolangParser {
                         _ => Method::Get,
                     };
 
-                    let mut body = RequestBody::None;
+                    let mut body = RequestBody::default();
 
                     // Try to find binding pattern near the route
                     let pos = cap.get(0).unwrap().end();
@@ -132,11 +132,12 @@ impl SourceParser for GolangParser {
                             .map(|m| m.as_str())
                             .unwrap_or("");
                         if let Some(json_body) = registry.generate_json(type_name) {
-                            body = RequestBody::Raw {
-                                content: json_body,
-                                content_type: "application/json".to_string(),
-                            };
+                            body = RequestBody::raw(
+                                json_body,
+                                "application/json".to_string(),
+                            );
                         }
+
                     }
 
                     requests.push(CollectionItem::Request(Request {
@@ -154,7 +155,7 @@ impl SourceParser for GolangParser {
                         url: format!("{{{{baseUrl}}}}/{}", url_path.trim_start_matches('/')),
                         params: Vec::new(),
                         headers: Vec::new(),
-                        auth: Auth::None,
+                        auth: Auth::default(),
                         body,
                         pre_request_script: None,
                         post_response_script: None,

@@ -133,7 +133,7 @@ impl SourceParser for FastApiParser {
                         _ => Method::Get,
                     };
 
-                    let mut body = RequestBody::None;
+                    let mut body = RequestBody::default();
 
                     // Look for the function definition immediately following the decorator
                     let start_pos = cap.get(0).unwrap().end();
@@ -144,11 +144,10 @@ impl SourceParser for FastApiParser {
                                 let type_hint = type_hint.trim();
                                 if registry.models.contains_key(type_hint) {
                                     if let Some(json_body) = registry.generate_json(type_hint) {
-                                        body = RequestBody::Raw {
-                                            content: json_body,
-                                            content_type: "application/json".to_string(),
-                                        };
-                                        break;
+                                        body = RequestBody::raw(
+                                            json_body,
+                                            "application/json".to_string(),
+                                        );
                                     }
                                 }
                             }
@@ -162,7 +161,7 @@ impl SourceParser for FastApiParser {
                         url: format!("{{{{baseUrl}}}}{}", url_path),
                         params: Vec::new(),
                         headers: Vec::new(),
-                        auth: Auth::None,
+                        auth: Auth::default(),
                         body,
                         pre_request_script: None,
                         post_response_script: None,

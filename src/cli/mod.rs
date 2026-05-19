@@ -139,8 +139,8 @@ pub async fn run_cli(command: Commands) -> Result<(), Box<dyn std::error::Error>
                 .map(|h| format!("{}:{}", h.key, h.value))
                 .collect();
 
-            let body = match &req.body {
-                crate::core::collection::RequestBody::Raw { content, .. } => Some(content.clone()),
+            let body = match req.body.selected {
+                crate::core::collection::BodyType::Raw => Some(req.body.raw.content.clone()),
                 _ => None,
             };
 
@@ -237,12 +237,9 @@ async fn send_request(
     }
 
     let body_type = if let Some(b) = final_body {
-        crate::core::collection::RequestBody::Raw {
-            content: b,
-            content_type: "application/json".to_string(),
-        }
+        crate::core::collection::RequestBody::raw(b, "application/json".to_string())
     } else {
-        crate::core::collection::RequestBody::None
+        crate::core::collection::RequestBody::default()
     };
 
     let engine = RequestEngine::new();
@@ -253,7 +250,7 @@ async fn send_request(
             final_headers,
             Vec::new(),
             body_type,
-            crate::core::collection::Auth::None,
+            crate::core::collection::Auth::default(),
         )
         .await?;
 

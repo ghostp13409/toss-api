@@ -31,10 +31,27 @@ impl PersistenceManager {
         let mut path = self.base_dir.clone();
         path.push("collections.json");
         if !path.exists() {
-            return Ok(Vec::new());
+            return Ok(Self::get_default_collections());
         }
         let content = fs::read_to_string(path)?;
-        let collections = serde_json::from_str(&content)?;
+        let collections: Vec<Collection> = serde_json::from_str(&content)?;
+        if collections.is_empty() {
+            return Ok(Self::get_default_collections());
+        }
         Ok(collections)
+    }
+
+    pub fn get_default_collections() -> Vec<Collection> {
+        let mut collections = Vec::new();
+        let httpbin_json = include_str!("../samples/httpbin.json");
+        let petstore_json = include_str!("../samples/petstore.json");
+
+        if let Ok(col) = crate::core::import::postman::import_postman_collection(httpbin_json) {
+            collections.push(col);
+        }
+        if let Ok(col) = crate::core::import::postman::import_postman_collection(petstore_json) {
+            collections.push(col);
+        }
+        collections
     }
 }

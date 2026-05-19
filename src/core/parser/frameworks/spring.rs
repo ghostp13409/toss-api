@@ -158,13 +158,14 @@ impl SourceParser for SpringParser {
                     if let Some(bcap) = request_body_regex.captures(&content[pos..slice_end]) {
                         let type_name = &bcap[1];
                         if let Some(json_body) = registry.generate_json(type_name) {
-                            return RequestBody::Raw {
-                                content: json_body,
-                                content_type: "application/json".to_string(),
-                            };
+                            return RequestBody::raw(
+                                json_body,
+                                "application/json".to_string(),
+                            );
                         }
+
                     }
-                    RequestBody::None
+                    RequestBody::default()
                 };
 
                 // Check for @XMapping
@@ -189,7 +190,7 @@ impl SourceParser for SpringParser {
                         url: format!("{{{{baseUrl}}}}{}", url_path),
                         params: Vec::new(),
                         headers: Vec::new(),
-                        auth: Auth::None,
+                        auth: Auth::default(),
                         body,
                         pre_request_script: None,
                         post_response_script: None,
@@ -218,7 +219,7 @@ impl SourceParser for SpringParser {
                         url: format!("{{{{baseUrl}}}}{}", url_path),
                         params: Vec::new(),
                         headers: Vec::new(),
-                        auth: Auth::None,
+                        auth: Auth::default(),
                         body,
                         pre_request_script: None,
                         post_response_script: None,

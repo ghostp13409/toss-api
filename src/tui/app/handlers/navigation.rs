@@ -167,6 +167,16 @@ impl App {
             PropertyTab::Body => PropertyTab::Scripts,
             PropertyTab::Scripts => PropertyTab::Params,
         };
+
+        let current_tab = self.selected_property_tab;
+        if let Some(req) = self.get_current_request_mut() {
+            match current_tab {
+                PropertyTab::Auth => req.auth.auto_select(),
+                PropertyTab::Body => req.body.auto_select(),
+                _ => {}
+            }
+        }
+
         self.property_editor_row = 0;
         self.details_scroll = 0;
     }
@@ -179,6 +189,16 @@ impl App {
             PropertyTab::Body => PropertyTab::Auth,
             PropertyTab::Scripts => PropertyTab::Body,
         };
+
+        let current_tab = self.selected_property_tab;
+        if let Some(req) = self.get_current_request_mut() {
+            match current_tab {
+                PropertyTab::Auth => req.auth.auto_select(),
+                PropertyTab::Body => req.body.auto_select(),
+                _ => {}
+            }
+        }
+
         self.property_editor_row = 0;
         self.details_scroll = 0;
     }

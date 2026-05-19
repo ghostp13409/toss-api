@@ -90,19 +90,19 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                         let max_rows = match app.selected_property_tab {
                             PropertyTab::Params => req.params.len(),
                             PropertyTab::Headers => req.headers.len(),
-                            PropertyTab::Auth => match &req.auth {
-                                crate::core::collection::Auth::None => 0,
-                                crate::core::collection::Auth::Bearer { .. } => 1,
-                                crate::core::collection::Auth::Basic { .. } => 2,
-                                crate::core::collection::Auth::ApiKey { .. } => 3,
+                            PropertyTab::Auth => match req.auth.selected {
+                                crate::core::collection::AuthType::None => 0,
+                                crate::core::collection::AuthType::Bearer => 1,
+                                crate::core::collection::AuthType::Basic => 2,
+                                crate::core::collection::AuthType::ApiKey => 3,
                             },
-                            PropertyTab::Body => match &req.body {
-                                crate::core::collection::RequestBody::FormData { items } => {
-                                    items.len()
+                            PropertyTab::Body => match req.body.selected {
+                                crate::core::collection::BodyType::FormData => {
+                                    req.body.form_data.items.len()
                                 }
-                                crate::core::collection::RequestBody::XWwwFormUrlEncoded {
-                                    items,
-                                } => items.len(),
+                                crate::core::collection::BodyType::XWwwFormUrlEncoded => {
+                                    req.body.x_www_form_urlencoded.items.len()
+                                }
                                 _ => 0,
                             },
                             _ => 0,
@@ -200,28 +200,28 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                         PropertyTab::Params | PropertyTab::Headers | PropertyTab::Auth
                     ) || (app.selected_property_tab == PropertyTab::Body
                         && matches!(
-                            req.body,
-                            crate::core::collection::RequestBody::FormData { .. }
-                                | crate::core::collection::RequestBody::XWwwFormUrlEncoded { .. }
+                            req.body.selected,
+                            crate::core::collection::BodyType::FormData
+                                | crate::core::collection::BodyType::XWwwFormUrlEncoded
                         ));
 
                     if is_kv_tab {
                         let max_rows = match app.selected_property_tab {
                             PropertyTab::Params => req.params.len(),
                             PropertyTab::Headers => req.headers.len(),
-                            PropertyTab::Auth => match &req.auth {
-                                crate::core::collection::Auth::None => 0,
-                                crate::core::collection::Auth::Bearer { .. } => 1,
-                                crate::core::collection::Auth::Basic { .. } => 2,
-                                crate::core::collection::Auth::ApiKey { .. } => 3,
+                            PropertyTab::Auth => match req.auth.selected {
+                                crate::core::collection::AuthType::None => 0,
+                                crate::core::collection::AuthType::Bearer => 1,
+                                crate::core::collection::AuthType::Basic => 2,
+                                crate::core::collection::AuthType::ApiKey => 3,
                             },
-                            PropertyTab::Body => match &req.body {
-                                crate::core::collection::RequestBody::FormData { items } => {
-                                    items.len()
+                            PropertyTab::Body => match req.body.selected {
+                                crate::core::collection::BodyType::FormData => {
+                                    req.body.form_data.items.len()
                                 }
-                                crate::core::collection::RequestBody::XWwwFormUrlEncoded {
-                                    items,
-                                } => items.len(),
+                                crate::core::collection::BodyType::XWwwFormUrlEncoded => {
+                                    req.body.x_www_form_urlencoded.items.len()
+                                }
                                 _ => 0,
                             },
                             _ => 0,
@@ -268,9 +268,9 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                         PropertyTab::Params | PropertyTab::Headers | PropertyTab::Auth
                     ) || (app.selected_property_tab == PropertyTab::Body
                         && matches!(
-                            req.body,
-                            crate::core::collection::RequestBody::FormData { .. }
-                                | crate::core::collection::RequestBody::XWwwFormUrlEncoded { .. }
+                            req.body.selected,
+                            crate::core::collection::BodyType::FormData
+                                | crate::core::collection::BodyType::XWwwFormUrlEncoded
                         ));
 
                     if is_kv_tab {
@@ -309,6 +309,8 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                             for col in &mut app.collections {
                                 if let Some(req) = col.find_request_mut(&id_clone) {
                                     app.url = req.url.clone();
+                                    req.auth.auto_select();
+                                    req.body.auto_select();
                                     break;
                                 }
                             }
@@ -331,10 +333,11 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                             app.current_request_id = Some(id.clone());
                             app.method = *method;
                             let id_clone = id.clone();
-                            if let Some(col) = app.collections.get_mut(app.active_collection_index)
-                            {
+                            if let Some(col) = app.collections.get_mut(app.active_collection_index) {
                                 if let Some(req) = col.find_request_mut(&id_clone) {
                                     app.url = req.url.clone();
+                                    req.auth.auto_select();
+                                    req.body.auto_select();
                                 }
                             }
                             app.focus_request_bar();
@@ -359,21 +362,56 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                 }
             }
             FocusedPanel::Details => {
-                if app.selected_property_tab == PropertyTab::Auth {
-                    if let Some(req) = app.get_current_request() {
-                        if let crate::core::collection::Auth::ApiKey { .. } = &req.auth {
+                if let Some(req) = app.get_current_request() {
+                    if app.selected_property_tab == PropertyTab::Auth {
+                        if req.auth.selected == crate::core::collection::AuthType::None {
+                            return;
+                        }
+                        if req.auth.selected == crate::core::collection::AuthType::ApiKey {
                             if app.property_editor_row == 2 {
                                 app.toggle_auth_bool();
                                 return;
                             }
                         }
+                        // Always switch to Value field when starting to edit Auth
+                        app.property_editor_field = PropertyEditorField::Value;
+                    } else if matches!(
+                        app.selected_property_tab,
+                        PropertyTab::Params | PropertyTab::Headers
+                    ) {
+                        let items = match app.selected_property_tab {
+                            PropertyTab::Params => &req.params,
+                            PropertyTab::Headers => &req.headers,
+                            _ => unreachable!(),
+                        };
+                        if items.is_empty() {
+                            return;
+                        }
+                    } else if app.selected_property_tab == PropertyTab::Body {
+                        match req.body.selected {
+                            crate::core::collection::BodyType::FormData => {
+                                if req.body.form_data.items.is_empty() {
+                                    return;
+                                }
+                            }
+                            crate::core::collection::BodyType::XWwwFormUrlEncoded => {
+                                if req.body.x_www_form_urlencoded.items.is_empty() {
+                                    return;
+                                }
+                            }
+                            crate::core::collection::BodyType::Raw | crate::core::collection::BodyType::None => {
+                                return;
+                            }
+                        }
+                    } else {
+                        // Scripts or other tabs
+                        return;
                     }
-                    // Always switch to Value field when starting to edit Auth
-                    app.property_editor_field = PropertyEditorField::Value;
+
+                    app.input_mode = InputMode::Editing;
+                    let current_val = app.get_kv_editor_value();
+                    app.cursor_position = current_val.len();
                 }
-                app.input_mode = InputMode::Editing;
-                let current_val = app.get_kv_editor_value();
-                app.cursor_position = current_val.len();
             }
             FocusedPanel::RequestBar => match app.active_request_part {
                 RequestBarPart::Method => {
@@ -510,16 +548,42 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                 app.pending_item_type = Some(PendingItemType::Request);
                 app.rename_input.clear();
                 app.cursor_position = 0;
+                return;
             } else if app.focused_panel == FocusedPanel::Details {
-                app.add_kv_param(String::new());
-                app.input_mode = InputMode::Editing;
-                app.property_editor_field = PropertyEditorField::Key;
-                app.cursor_position = 0;
+                if let Some(req) = app.get_current_request() {
+                    // Check if we can add based on the current tab and its state
+                    let can_add = match app.selected_property_tab {
+                        PropertyTab::Auth => {
+                            // Don't allow adding in Auth tab if it's set to None
+                            req.auth.selected != crate::core::collection::AuthType::None
+                        }
+                        PropertyTab::Params | PropertyTab::Headers => true,
+                        PropertyTab::Body => {
+                            // Only allow for FormData and XWwwFormUrlEncoded, not Raw or None
+                            match req.body.selected {
+                                crate::core::collection::BodyType::FormData
+                                | crate::core::collection::BodyType::XWwwFormUrlEncoded => true,
+                                _ => false,
+                            }
+                        }
+                        _ => false,
+                    };
+
+                    if can_add {
+                        app.add_kv_param(String::new());
+                        app.input_mode = InputMode::Editing;
+                        app.property_editor_field = PropertyEditorField::Key;
+                        app.cursor_position = 0;
+                    }
+                    // Always return - don't process 'a' further if in Details panel
+                    return;
+                }
             } else if app.focused_panel == FocusedPanel::Environments {
                 app.add_env_var(String::new());
                 app.input_mode = InputMode::Editing;
                 app.property_editor_field = PropertyEditorField::Key;
                 app.cursor_position = 0;
+                return;
             }
         }
 
@@ -633,21 +697,35 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
             if app.focused_panel == FocusedPanel::Details {
                 match app.selected_property_tab {
                     PropertyTab::Params | PropertyTab::Headers | PropertyTab::Auth => {
-                        if app.selected_property_tab == PropertyTab::Auth {
-                            if let Some(req) = app.get_current_request() {
-                                if let crate::core::collection::Auth::ApiKey { .. } = &req.auth {
+                        if let Some(req) = app.get_current_request() {
+                            if app.selected_property_tab == PropertyTab::Auth {
+                                if req.auth.selected == crate::core::collection::AuthType::None {
+                                    return;
+                                }
+                                if req.auth.selected == crate::core::collection::AuthType::ApiKey {
                                     if app.property_editor_row == 2 {
                                         // It's a boolean, don't enter editing mode, just toggle
                                         app.toggle_auth_bool();
                                         return;
                                     }
                                 }
+                                app.property_editor_field = PropertyEditorField::Value;
+                            } else {
+                                // For Params and Headers, check if there's a row to edit
+                                let items = match app.selected_property_tab {
+                                    PropertyTab::Params => &req.params,
+                                    PropertyTab::Headers => &req.headers,
+                                    _ => &Vec::new(),
+                                };
+                                if items.is_empty() {
+                                    return;
+                                }
                             }
-                            app.property_editor_field = PropertyEditorField::Value;
+
+                            app.input_mode = InputMode::Editing;
+                            let current_val = app.get_kv_editor_value();
+                            app.cursor_position = current_val.len();
                         }
-                        app.input_mode = InputMode::Editing;
-                        let current_val = app.get_kv_editor_value();
-                        app.cursor_position = current_val.len();
                     }
                     _ => {}
                 }

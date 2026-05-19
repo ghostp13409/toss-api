@@ -1,4 +1,4 @@
-use crate::core::collection::{Auth, RequestBody};
+use crate::core::collection::{Auth, AuthType, BodyType, RequestBody};
 use reqwest::{Client, Method, Response};
 use std::collections::HashMap;
 
@@ -45,49 +45,41 @@ impl RequestEngine {
         }
 
         // Apply Auth
-        match auth {
-            Auth::None => {}
-            Auth::Bearer { token } => {
-                request = request.bearer_auth(token);
+        match auth.selected {
+            AuthType::None => {}
+            AuthType::Bearer => {
+                request = request.bearer_auth(auth.bearer.token);
             }
-            Auth::Basic { username, password } => {
-                request = request.basic_auth(username, Some(password));
+            AuthType::Basic => {
+                request = request.basic_auth(auth.basic.username, Some(auth.basic.password));
             }
-            Auth::ApiKey {
-                key,
-                value,
-                in_header,
-            } => {
-                if in_header {
-                    request = request.header(key, value);
+            AuthType::ApiKey => {
+                if auth.api_key.in_header {
+                    request = request.header(auth.api_key.key, auth.api_key.value);
                 } else {
-                    // Re-parse URL to add query param if needed, or use query_pairs_mut
-                    // Actually we can't easily modify the request URL here after it's in the builder
-                    // So we should have added it to params earlier.
-                    // For now, let's just handle it in builder if possible or skip.
-                    // reqwest doesn't have a direct query() on builder that is easy to use with Auth.
+                    // TODO: Handle ApiKey in query if needed
                 }
             }
         }
 
         // Apply Body
-        match body_type {
-            RequestBody::None => {}
-            RequestBody::Raw { content, .. } => {
-                request = request.body(content);
+        match body_type.selected {
+            BodyType::None => {}
+            BodyType::Raw => {
+                request = request.body(body_type.raw.content);
             }
-            RequestBody::FormData { items } => {
+            BodyType::FormData => {
                 let mut form = reqwest::multipart::Form::new();
-                for item in items {
+                for item in body_type.form_data.items {
                     if item.enabled {
                         form = form.text(item.key, item.value);
                     }
                 }
                 request = request.multipart(form);
             }
-            RequestBody::XWwwFormUrlEncoded { items } => {
+            BodyType::XWwwFormUrlEncoded => {
                 let mut params = Vec::new();
-                for item in items {
+                for item in body_type.x_www_form_urlencoded.items {
                     if item.enabled {
                         params.push((item.key, item.value));
                     }

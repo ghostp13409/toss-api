@@ -71,8 +71,8 @@ impl SourceParser for NextJsParser {
                             url: format!("{{{{baseUrl}}}}{}", url_path),
                             params: Vec::new(),
                             headers: Vec::new(),
-                            auth: Auth::None,
-                            body: RequestBody::None,
+                            auth: Auth::default(),
+                            body: RequestBody::default(),
                             pre_request_script: None,
                             post_response_script: None,
                         }));
@@ -118,8 +118,8 @@ impl SourceParser for NextJsParser {
                     url: format!("{{{{baseUrl}}}}{}", url_path),
                     params: Vec::new(),
                     headers: Vec::new(),
-                    auth: Auth::None,
-                    body: RequestBody::None,
+                    auth: Auth::default(),
+                    body: RequestBody::default(),
                     pre_request_script: None,
                     post_response_script: None,
                 });
