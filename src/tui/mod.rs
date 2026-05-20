@@ -3,7 +3,7 @@ pub mod input;
 pub mod ui;
 
 use crate::engine::http::RequestEngine;
-use app::{App, InputMode, ResponseStats, TuiAction};
+use app::{App, FocusedPanel, InputMode, ResponseStats, TuiAction};
 use arboard::Clipboard;
 use crossterm::{
     event::{self, Event, KeyEvent},
@@ -138,6 +138,9 @@ where
                     app.response_content_type = content_type;
                     app.response_status = status;
                     app.response_stats_data = stats;
+                    app.response_scroll = 0;
+                    app.response_cursor_row = 0;
+                    app.response_cursor_col = 0;
                 }
             }
         }
@@ -367,11 +370,125 @@ where
                         app.notify("Clipboard not available");
                     }
                 }
+                TuiAction::Paste => {
+                    if let Some(cb) = clipboard.as_mut() {
+                        match cb.get_text() {
+                            Ok(text) => match app.input_mode {
+                                InputMode::Editing => {
+                                    if app.focused_panel == FocusedPanel::RequestBar
+                                        && app.active_request_part == crate::tui::app::RequestBarPart::Url
+                                    {
+                                        app.insert_string_url(&text);
+                                        app.sync_params_from_url();
+                                    } else if app.focused_panel == FocusedPanel::Details {
+                                        let mut val = app.get_kv_editor_value();
+                                        app.insert_string(&mut val, &text);
+                                        app.update_kv_param(val);
+                                    } else if app.focused_panel == FocusedPanel::Environments {
+                                        let mut val = app.get_env_editor_value();
+                                        app.insert_string(&mut val, &text);
+                                        app.update_env_editor_value(val);
+                                    }
+                                }
+                                InputMode::Normal => {
+                                    if app.focused_panel == FocusedPanel::Details {
+                                        app.update_kv_param(text.clone());
+                                        app.notify("Pasted into field");
+                                    } else if app.focused_panel == FocusedPanel::Environments {
+                                        app.update_env_editor_value(text.clone());
+                                        app.notify("Pasted into variable");
+                                    }
+                                }
+                                InputMode::Rename | InputMode::CreateItem => {
+                                    app.insert_string_rename(&text);
+                                }
+                                InputMode::Search => {
+                                    let pos = app.cursor_position.min(app.search_query.len());
+                                    app.search_query.insert_str(pos, &text);
+                                    app.cursor_position = pos + text.len();
+                                }
+                                InputMode::Command => {
+                                    let pos = app.cursor_position.min(app.command_input.len());
+                                    app.command_input.insert_str(pos, &text);
+                                    app.cursor_position = pos + text.len();
+                                }
+                                _ => {}
+                            },
+                            Err(e) => app.notify(format!("Failed to paste: {}", e)),
+                        }
+                    } else {
+                        app.notify("Clipboard not available");
+                    }
+                }
+                TuiAction::Copy => {
+                    if let Some(cb) = clipboard.as_mut() {
+                        let text = match app.input_mode {
+                            InputMode::Editing => {
+                                if app.focused_panel == FocusedPanel::RequestBar
+                                    && app.active_request_part == crate::tui::app::RequestBarPart::Url
+                                {
+                                    Some(app.url.clone())
+                                } else if app.focused_panel == FocusedPanel::Details {
+                                    Some(app.get_kv_editor_value())
+                                } else if app.focused_panel == FocusedPanel::Environments {
+                                    Some(app.get_env_editor_value())
+                                } else {
+                                    None
+                                }
+                            }
+                            InputMode::Rename | InputMode::CreateItem => Some(app.rename_input.clone()),
+                            InputMode::Search => Some(app.search_query.clone()),
+                            InputMode::Command => Some(app.command_input.clone()),
+                            InputMode::Normal => {
+                                if app.focused_panel == FocusedPanel::Response {
+                                    app.pending_actions.push(TuiAction::CopyResponseValue);
+                                    None
+                                } else {
+                                    None
+                                }
+                            }
+                            _ => None,
+                        };
+
+                        if let Some(t) = text {
+                            match cb.set_text(t) {
+                                Ok(_) => app.notify("Copied to clipboard"),
+                                Err(e) => app.notify(format!("Failed to copy: {}", e)),
+                            }
+                        }
+                    } else {
+                        app.notify("Clipboard not available");
+                    }
+                }
                 TuiAction::CopyResponseBody => {
                     if let Some(cb) = clipboard.as_mut() {
                         match cb.set_text(app.response_body.clone()) {
                             Ok(_) => app.notify("Response body copied"),
                             Err(e) => app.notify(format!("Failed to copy: {}", e)),
+                        }
+                    } else {
+                        app.notify("Clipboard not available");
+                    }
+                }
+                TuiAction::CopyResponseValue => {
+                    if let Some(cb) = clipboard.as_mut() {
+                        let formatted = crate::tui::ui::syntax::format_content(
+                            &app.response_body,
+                            app.response_content_type.as_deref(),
+                        );
+                        let lines: Vec<&str> = formatted.lines().collect();
+                        if let Some(line) = lines.get(app.response_cursor_row as usize) {
+                            let (key, value) = crate::tui::ui::utils::extract_json_value(line);
+                            match cb.set_text(value) {
+                                Ok(_) => {
+                                    if let Some(k) = key {
+                                        app.notify(format!("{} value copied", k));
+                                    } else {
+                                        app.notify("Value copied to clipboard");
+                                    }
+                                }
+                                Err(e) => app.notify(format!("Failed to copy: {}", e)),
+                            }
                         }
                     } else {
                         app.notify("Clipboard not available");

@@ -42,18 +42,39 @@ pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
 
     let formatted_body = format_content(&app.response_body, app.response_content_type.as_deref());
     let trimmed_body = formatted_body.trim_end();
-    let highlighted_body = highlight_content(trimmed_body, app.response_content_type.as_deref());
 
     let response_area_inner = response_block.inner(response_area[0]);
     let response_height = response_area_inner.height;
+    let response_width = response_area_inner.width;
+    let mut highlighted_body = highlight_content(trimmed_body, app.response_content_type.as_deref());
     let line_count = highlighted_body.lines.len() as u16;
 
-    if line_count <= response_height {
-        app.response_scroll = 0;
-    } else {
-        let max_scroll = line_count.saturating_sub(response_height);
-        if app.response_scroll > max_scroll {
-            app.response_scroll = max_scroll;
+    // Adjust cursor and scroll
+    if app.response_cursor_row >= line_count {
+        app.response_cursor_row = line_count.saturating_sub(1);
+    }
+
+    if app.response_cursor_row < app.response_scroll {
+        app.response_scroll = app.response_cursor_row;
+    } else if app.response_cursor_row >= app.response_scroll + response_height {
+        app.response_scroll = app.response_cursor_row - response_height + 1;
+    }
+
+    if app.response_cursor_col < app.response_horizontal_scroll {
+        app.response_horizontal_scroll = app.response_cursor_col;
+    } else if app.response_cursor_col >= app.response_horizontal_scroll + response_width {
+        app.response_horizontal_scroll = app.response_cursor_col - response_width + 1;
+    }
+
+    // Highlight selected line if panel is focused
+    if app.focused_panel == FocusedPanel::Response && !highlighted_body.lines.is_empty() {
+        if let Some(line) = highlighted_body
+            .lines
+            .get_mut(app.response_cursor_row as usize)
+        {
+            for span in &mut line.spans {
+                span.style = span.style.add_modifier(Modifier::REVERSED);
+            }
         }
     }
 

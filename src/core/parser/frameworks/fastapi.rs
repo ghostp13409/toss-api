@@ -126,6 +126,12 @@ impl SourceParser for FastApiParser {
             }
 
             if let Ok(content) = std::fs::read_to_string(entry.path()) {
+                // Detect router prefix
+                let router_prefix_regex = Regex::new(r#"APIRouter\s*\(\s*(?:.*prefix\s*=\s*)?['"]([^'"]+)['"]"#).unwrap();
+                let router_prefix = router_prefix_regex.captures(&content)
+                    .map(|c| c[1].to_string())
+                    .unwrap_or_default();
+
                 let mut requests = Vec::new();
 
                 for cap in route_regex.captures_iter(&content) {
@@ -161,11 +167,14 @@ impl SourceParser for FastApiParser {
                         }
                     }
 
+                    let full_path = format!("{}/{}", router_prefix.trim_end_matches('/'), url_path.trim_start_matches('/'));
+                    let full_path = if full_path.is_empty() { String::new() } else if full_path.starts_with('/') { full_path } else { format!("/{}", full_path) };
+
                     requests.push(CollectionItem::Request(Request {
                         id: uuid::Uuid::new_v4().to_string(),
-                        name: format!("{} {}", method_str.to_uppercase(), url_path),
+                        name: format!("{} {}", method_str.to_uppercase(), full_path),
                         method,
-                        url: format!("{{{{baseUrl}}}}{}", url_path),
+                        url: format!("{{{{baseUrl}}}}{}", full_path),
                         params: Vec::new(),
                         headers: Vec::new(),
                         auth: Auth::default(),

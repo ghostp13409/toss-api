@@ -40,6 +40,12 @@ impl App {
         self.cursor_position = pos + c.len_utf8();
     }
 
+    pub fn insert_string(&mut self, target: &mut String, s: &str) {
+        let pos = self.cursor_position.min(target.len());
+        target.insert_str(pos, s);
+        self.cursor_position = pos + s.len();
+    }
+
     pub fn delete_char(&mut self, target: &mut String) {
         if self.cursor_position > 0 {
             let mut prev_pos = self.cursor_position;
@@ -75,6 +81,12 @@ impl App {
         self.cursor_position = pos + c.len_utf8();
     }
 
+    pub fn insert_string_rename(&mut self, s: &str) {
+        let pos = self.cursor_position.min(self.rename_input.len());
+        self.rename_input.insert_str(pos, s);
+        self.cursor_position = pos + s.len();
+    }
+
     pub fn delete_char_rename(&mut self) {
         if self.cursor_position > 0 {
             let mut prev_pos = self.cursor_position;
@@ -99,6 +111,12 @@ impl App {
         let pos = self.cursor_position.min(self.url.len());
         self.url.insert(pos, c);
         self.cursor_position = pos + c.len_utf8();
+    }
+
+    pub fn insert_string_url(&mut self, s: &str) {
+        let pos = self.cursor_position.min(self.url.len());
+        self.url.insert_str(pos, s);
+        self.cursor_position = pos + s.len();
     }
 
     pub fn delete_char_url(&mut self) {

@@ -271,6 +271,10 @@ pub fn render_help_popup(f: &mut Frame, _app: &App) {
             Span::raw(": Cycle Auth / Body type (in Details)"),
         ]),
         Line::from(vec![
+            Span::styled("  c         ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Copy JSON value (in Response)"),
+        ]),
+        Line::from(vec![
             Span::styled("  y / p     ", Style::default().fg(Color::Cyan)),
             Span::raw(": Copy / Paste (Body / Response)"),
         ]),
