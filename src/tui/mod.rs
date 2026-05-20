@@ -3,7 +3,7 @@ pub mod input;
 pub mod ui;
 
 use crate::engine::http::RequestEngine;
-use app::{App, ResponseStats, TuiAction};
+use app::{App, InputMode, ResponseStats, TuiAction};
 use arboard::Clipboard;
 use crossterm::{
     event::{self, Event, KeyEvent},
@@ -322,6 +322,7 @@ where
                     let _ = enable_raw_mode();
                     let _ = terminal.clear();
 
+                    app.input_mode = InputMode::Normal;
                     is_paused.store(false, Ordering::SeqCst);
                 }
                 TuiAction::CopyBody => {
