@@ -43,8 +43,10 @@ pub async fn run_cli(command: Commands) -> Result<(), Box<dyn std::error::Error>
             )
             .await?;
         }
-        Commands::Import { path } => {
-            let collection = import_collection(path)?;
+        Commands::Import { path, base_url } => {
+            let mut collection = import_collection(path)?;
+            process_base_url(&mut collection, base_url);
+
             let mut existing = persistence.load_collections()?;
             existing.push(collection.clone());
             persistence.save_collections(&existing)?;
@@ -54,8 +56,10 @@ pub async fn run_cli(command: Commands) -> Result<(), Box<dyn std::error::Error>
                 collection.name.with(Color::Cyan)
             );
         }
-        Commands::Parse { path } => {
-            let collection = parse_project(path)?;
+        Commands::Parse { path, base_url } => {
+            let mut collection = parse_project(path)?;
+            process_base_url(&mut collection, base_url);
+
             let mut existing = persistence.load_collections()?;
             existing.push(collection.clone());
             persistence.save_collections(&existing)?;
@@ -318,5 +322,75 @@ fn print_collection_items(items: &[crate::core::collection::CollectionItem], dep
                 );
             }
         }
+    }
+}
+
+fn process_base_url(
+    collection: &mut crate::core::collection::Collection,
+    base_url_arg: Option<String>,
+) {
+    let base_url = if let Some(url) = base_url_arg {
+        if url == "interactive" {
+            get_interactive_base_url()
+        } else {
+            url
+        }
+    } else if let Some(detected) = collection.detect_base_url() {
+        detected
+    } else {
+        "http://localhost:8080".to_string()
+    };
+
+    collection.apply_base_url(&base_url);
+    println!(
+        "{} Base URL applied: {}",
+        "ℹ".with(Color::Blue),
+        base_url.with(Color::Cyan)
+    );
+}
+
+fn get_interactive_base_url() -> String {
+    use std::io::{self, Write};
+
+    println!("{}", "\n--- Interactive Base URL Builder ---".with(Color::Yellow).bold());
+
+    let mut protocol = String::new();
+    print!("{} Choose protocol (1: http, 2: https) [1]: ", "?".with(Color::Green));
+    io::stdout().flush().unwrap();
+    io::stdin().read_line(&mut protocol).unwrap();
+    let protocol = match protocol.trim() {
+        "2" | "https" => "https",
+        _ => "http",
+    };
+
+    let mut host_type = String::new();
+    print!("{} Choose host type (1: local, 2: remote) [1]: ", "?".with(Color::Green));
+    io::stdout().flush().unwrap();
+    io::stdin().read_line(&mut host_type).unwrap();
+    let host = match host_type.trim() {
+        "2" | "remote" => {
+            let mut remote_host = String::new();
+            print!("{} Enter remote host (e.g. example.com): ", "?".with(Color::Green));
+            io::stdout().flush().unwrap();
+            io::stdin().read_line(&mut remote_host).unwrap();
+            let h = remote_host.trim().to_string();
+            if h.is_empty() { "example.com".to_string() } else { h }
+        }
+        _ => "localhost".to_string(),
+    };
+
+    let mut port = String::new();
+    if host == "localhost" {
+        print!("{} Enter port [8080]: ", "?".with(Color::Green));
+        io::stdout().flush().unwrap();
+        io::stdin().read_line(&mut port).unwrap();
+        let port = port.trim();
+        if port.is_empty() {
+            format!("{}://{}:8080", protocol, host)
+        } else {
+            format!("{}://{}:{}", protocol, host, port)
+        }
+    } else {
+        format!("{}://{}", protocol, host)
     }
 }

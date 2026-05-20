@@ -53,12 +53,20 @@ pub enum Commands {
     Import {
         /// Path to the file to import
         path: String,
+
+        /// Base URL for the collection. Use -u alone for interactive mode.
+        #[arg(short = 'u', long, num_args(0..=1), default_missing_value = "interactive")]
+        base_url: Option<String>,
     },
 
     /// Parse a project directory to extract APIs
     Parse {
         /// Path to the project directory
         path: String,
+
+        /// Base URL for the collection. Use -u alone for interactive mode.
+        #[arg(short = 'u', long, num_args(0..=1), default_missing_value = "interactive")]
+        base_url: Option<String>,
     },
 
     /// Manage and list saved collections

@@ -266,6 +266,60 @@ impl Collection {
         changed_ids
     }
 
+    pub fn detect_base_url(&self) -> Option<String> {
+        let mut urls = Vec::new();
+        self.collect_urls(&self.items, &mut urls);
+
+        if urls.is_empty() {
+            return None;
+        }
+
+        // Find the shortest URL as a starting candidate for common prefix
+        let mut shortest = urls.iter().min_by_key(|u| u.len()).unwrap().clone();
+
+        // Refine it to be just the domain part
+        if let Some(pos) = shortest.find("://") {
+            if let Some(slash_pos) = shortest[pos + 3..].find('/') {
+                shortest = shortest[..pos + 3 + slash_pos].to_string();
+            }
+        }
+
+        // Check if all URLs start with this prefix
+        let all_match = urls.iter().all(|u| u.starts_with(&shortest));
+
+        if all_match && shortest.contains("://") {
+            Some(shortest)
+        } else {
+            None
+        }
+    }
+
+    fn collect_urls(&self, items: &[CollectionItem], urls: &mut Vec<String>) {
+        for item in items {
+            match item {
+                CollectionItem::Request(r) => urls.push(r.url.clone()),
+                CollectionItem::Folder(f) => self.collect_urls(&f.items, urls),
+            }
+        }
+    }
+
+    pub fn apply_base_url(&mut self, base_url: &str) {
+        // Add or update baseUrl in env_vars
+        if let Some(var) = self.env_vars.iter_mut().find(|v| v.key == "baseUrl") {
+            var.value = base_url.to_string();
+        } else {
+            self.env_vars.push(KVParam {
+                key: "baseUrl".to_string(),
+                value: base_url.to_string(),
+                enabled: true,
+                description: Some("Auto-generated base URL".to_string()),
+            });
+        }
+
+        // Replace occurrences in all request URLs
+        self.replace_urls_with_placeholder(base_url, "{{baseUrl}}");
+    }
+
     fn recursive_replace(
         items: &mut [CollectionItem],
         base_url: &str,

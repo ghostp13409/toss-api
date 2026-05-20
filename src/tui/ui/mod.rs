@@ -146,15 +146,15 @@ fn render_cursor(f: &mut Frame, app: &mut App, chunks: &[Rect], columns: &[Rect]
 
                     let offset = if show_description {
                         match app.property_editor_field {
-                            PropertyEditorField::Key => (5 * inner_area.width / 100) + 2,
-                            PropertyEditorField::Value => (35 * inner_area.width / 100) + 3,
-                            PropertyEditorField::Description => (65 * inner_area.width / 100) + 4,
+                            PropertyEditorField::Key => (5 * inner_area.width / 100) + 1,
+                            PropertyEditorField::Value => (35 * inner_area.width / 100) + 2,
+                            PropertyEditorField::Description => (65 * inner_area.width / 100) + 3,
                         }
                     } else {
                         match app.property_editor_field {
-                            PropertyEditorField::Key => (5 * inner_area.width / 100) + 2,
-                            PropertyEditorField::Value => (50 * inner_area.width / 100) + 3,
-                            PropertyEditorField::Description => (50 * inner_area.width / 100) + 3,
+                            PropertyEditorField::Key => (5 * inner_area.width / 100) + 1,
+                            PropertyEditorField::Value => (50 * inner_area.width / 100) + 2,
+                            PropertyEditorField::Description => (50 * inner_area.width / 100) + 2,
                         }
                     };
 
@@ -179,9 +179,9 @@ fn render_cursor(f: &mut Frame, app: &mut App, chunks: &[Rect], columns: &[Rect]
                 let y = inner_area.y + 1 + app.selected_env_index as u16;
 
                 let offset = match app.property_editor_field {
-                    PropertyEditorField::Key => 1,
-                    PropertyEditorField::Value => (40 * inner_area.width / 100) + 2,
-                    _ => 1,
+                    PropertyEditorField::Key => 0,
+                    PropertyEditorField::Value => (40 * inner_area.width / 100) + 1,
+                    _ => 0,
                 };
                 let current_val = app.get_env_editor_value();
                 let cursor_x = current_val[..app.cursor_position.min(current_val.len())]
@@ -197,7 +197,7 @@ fn render_cursor(f: &mut Frame, app: &mut App, chunks: &[Rect], columns: &[Rect]
             let cursor_x = app.rename_input[..app.cursor_position.min(app.rename_input.len())]
                 .chars()
                 .count() as u16;
-            f.set_cursor_position((area.x + 1 + cursor_x, area.y + 1));
+            f.set_cursor_position((area.x + cursor_x, area.y + 1));
         }
         InputMode::Search if app.show_search => {
             let sidebar_area = columns[0];
@@ -209,14 +209,14 @@ fn render_cursor(f: &mut Frame, app: &mut App, chunks: &[Rect], columns: &[Rect]
             let cursor_x = app.search_query[..app.cursor_position.min(app.search_query.len())]
                 .chars()
                 .count() as u16;
-            f.set_cursor_position((area.x + 1 + cursor_x, area.y + 1));
+            f.set_cursor_position((area.x + cursor_x, area.y + 1));
         }
         InputMode::Command => {
             let cursor_x = app.command_input[..app.cursor_position.min(app.command_input.len())]
                 .chars()
                 .count() as u16;
             f.set_cursor_position((
-                chunks[2].x + 11 + cursor_x,
+                chunks[2].x + 10 + cursor_x,
                 chunks[2].y,
             ));
         }
@@ -227,7 +227,7 @@ fn render_cursor(f: &mut Frame, app: &mut App, chunks: &[Rect], columns: &[Rect]
                     [..app.cursor_position.min(app.method_search_query.len())]
                     .chars()
                     .count() as u16;
-                f.set_cursor_position((area.x + 1 + cursor_x, area.y + 1));
+                f.set_cursor_position((area.x + cursor_x, area.y + 1));
             }
         }
     }
