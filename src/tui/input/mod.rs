@@ -34,6 +34,16 @@ pub fn handle_input(app: &mut App, key: KeyEvent) {
         return;
     }
 
+    if key.modifiers.contains(KeyModifiers::CONTROL) && key.code == KeyCode::Char('v') {
+        app.pending_actions.push(TuiAction::Paste);
+        return;
+    }
+
+    if key.modifiers.contains(KeyModifiers::CONTROL) && key.code == KeyCode::Char('c') {
+        app.pending_actions.push(TuiAction::Copy);
+        return;
+    }
+
     match app.input_mode {
         InputMode::Normal => {
             handle_normal_mode(app, key);

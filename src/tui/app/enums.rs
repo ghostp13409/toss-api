@@ -59,8 +59,11 @@ pub enum TuiAction {
     SendRequest,
     EditBody,
     CopyBody,
+    Copy,
     PasteBody,
+    Paste,
     CopyResponseBody,
+    CopyResponseValue,
     CopyResponseAll,
 }
 

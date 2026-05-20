@@ -105,7 +105,7 @@ impl SourceParser for AspNetParser {
                 .unwrap();
         // Minimal APIs like app.MapGet("path", ...)
         let map_regex =
-            Regex::new(r#"app\.Map(Get|Post|Put|Patch|Delete)\s*\(\s*["']([^'"]+)['"]"#).unwrap();
+            Regex::new(r#"app\.Map(Get|Post|Put|Patch|Delete)\s*\(\s*["']([^"']+)['"]"#).unwrap();
 
         let from_body_regex =
             Regex::new(r"\[FromBody\]\s*([a-zA-Z0-9_<>]+)\s+([a-zA-Z0-9_]+)").unwrap();
@@ -116,6 +116,12 @@ impl SourceParser for AspNetParser {
             .filter(|e| e.path().extension().map_or(false, |ext| ext == "cs"))
         {
             if let Ok(content) = std::fs::read_to_string(entry.path()) {
+                // Detect class-level route
+                let class_route_regex = Regex::new(r#"(?m)\[Route\s*\(\s*["']([^"']*)["']\s*\)\]\s*(?:public|internal)?\s+(?:class|record)"#).unwrap();
+                let class_prefix = class_route_regex.captures(&content)
+                    .map(|c| c[1].to_string())
+                    .unwrap_or_default();
+
                 let mut requests = Vec::new();
 
                 let find_body = |pos: usize| -> RequestBody {
@@ -146,11 +152,14 @@ impl SourceParser for AspNetParser {
 
                     let body = find_body(cap.get(0).unwrap().end());
 
+                    let full_path = format!("{}/{}", class_prefix.trim_end_matches('/'), url_path.trim_start_matches('/'));
+                    let full_path = if full_path.is_empty() { String::new() } else if full_path.starts_with('/') { full_path } else { format!("/{}", full_path) };
+
                     requests.push(CollectionItem::Request(Request {
                         id: uuid::Uuid::new_v4().to_string(),
-                        name: format!("{} {}", method_str.to_uppercase(), url_path),
+                        name: format!("{} {}", method_str.to_uppercase(), full_path),
                         method,
-                        url: format!("{{{{baseUrl}}}}/{}", url_path.trim_start_matches('/')),
+                        url: format!("{{{{baseUrl}}}}{}", full_path),
                         params: Vec::new(),
                         headers: Vec::new(),
                         auth: Auth::default(),
@@ -174,11 +183,14 @@ impl SourceParser for AspNetParser {
 
                     let body = find_body(cap.get(0).unwrap().end());
 
+                    let full_path = format!("{}/{}", class_prefix.trim_end_matches('/'), url_path.trim_start_matches('/'));
+                    let full_path = if full_path.is_empty() { String::new() } else if full_path.starts_with('/') { full_path } else { format!("/{}", full_path) };
+
                     requests.push(CollectionItem::Request(Request {
                         id: uuid::Uuid::new_v4().to_string(),
-                        name: format!("{} {}", method_str.to_uppercase(), url_path),
+                        name: format!("{} {}", method_str.to_uppercase(), full_path),
                         method,
-                        url: format!("{{{{baseUrl}}}}/{}", url_path.trim_start_matches('/')),
+                        url: format!("{{{{baseUrl}}}}{}", full_path),
                         params: Vec::new(),
                         headers: Vec::new(),
                         auth: Auth::default(),

@@ -129,3 +129,38 @@ pub fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
         ])
         .split(popup_layout[1])[1]
 }
+
+pub fn extract_json_value(line: &str) -> (Option<String>, String) {
+    let line = line.trim();
+
+    if let Some(colon_pos) = line.find(':') {
+        let key_part = line[..colon_pos].trim();
+        let value_part = line[colon_pos + 1..].trim();
+        
+        let key = if key_part.starts_with('"') && key_part.ends_with('"') && key_part.len() >= 2 {
+            Some(key_part[1..key_part.len() - 1].to_string())
+        } else {
+            None
+        };
+
+        // Remove trailing comma if present
+        let value_part = value_part.trim_end_matches(',');
+
+        let value = if value_part.starts_with('"') && value_part.ends_with('"') && value_part.len() >= 2 {
+            // String value
+            value_part[1..value_part.len() - 1].to_string()
+        } else {
+            value_part.to_string()
+        };
+
+        return (key, value);
+    }
+
+    // Fallback: if it's just a string in quotes (array element)
+    let line = line.trim_end_matches(',');
+    if line.starts_with('"') && line.ends_with('"') && line.len() >= 2 {
+        return (None, line[1..line.len() - 1].to_string());
+    }
+
+    (None, line.to_string())
+}

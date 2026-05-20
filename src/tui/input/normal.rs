@@ -235,7 +235,7 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                 }
             }
             FocusedPanel::Response => {
-                app.response_scroll = app.response_scroll.saturating_add(1);
+                app.response_cursor_row = app.response_cursor_row.saturating_add(1);
             }
             FocusedPanel::Stats => {
                 app.stats_scroll = app.stats_scroll.saturating_add(1);
@@ -283,7 +283,7 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                 }
             }
             FocusedPanel::Response => {
-                app.response_scroll = app.response_scroll.saturating_sub(1);
+                app.response_cursor_row = app.response_cursor_row.saturating_sub(1);
             }
             FocusedPanel::Stats => {
                 app.stats_scroll = app.stats_scroll.saturating_sub(1);
@@ -461,7 +461,7 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                 };
             }
             FocusedPanel::Response => {
-                app.response_horizontal_scroll = app.response_horizontal_scroll.saturating_add(1);
+                app.response_cursor_col = app.response_cursor_col.saturating_add(1);
             }
             FocusedPanel::Stats => {
                 app.cycle_stats_tab();
@@ -499,7 +499,7 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                 };
             }
             FocusedPanel::Response => {
-                app.response_horizontal_scroll = app.response_horizontal_scroll.saturating_sub(1);
+                app.response_cursor_col = app.response_cursor_col.saturating_sub(1);
             }
             FocusedPanel::Stats => {
                 app.prev_stats_tab();
@@ -603,6 +603,8 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                 && app.selected_property_tab == PropertyTab::Body
             {
                 app.cycle_raw_content_type();
+            } else if app.focused_panel == FocusedPanel::Response {
+                app.pending_actions.push(TuiAction::CopyResponseValue);
             }
         }
 
@@ -677,7 +679,11 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
             {
                 app.pending_actions.push(TuiAction::CopyBody);
             } else if app.focused_panel == FocusedPanel::Response {
-                app.pending_actions.push(TuiAction::CopyResponseBody);
+                app.pending_actions.push(TuiAction::CopyResponseValue);
+            } else if app.focused_panel == FocusedPanel::Details {
+                app.pending_actions.push(TuiAction::Copy);
+            } else if app.focused_panel == FocusedPanel::Environments {
+                app.pending_actions.push(TuiAction::Copy);
             }
         }
 
@@ -686,6 +692,10 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                 && app.selected_property_tab == PropertyTab::Body
             {
                 app.pending_actions.push(TuiAction::PasteBody);
+            } else if app.focused_panel == FocusedPanel::Details
+                || app.focused_panel == FocusedPanel::Environments
+            {
+                app.pending_actions.push(TuiAction::Paste);
             }
         }
 

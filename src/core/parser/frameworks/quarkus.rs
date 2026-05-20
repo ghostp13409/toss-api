@@ -44,16 +44,20 @@ impl SourceParser for QuarkusParser {
                 let mut requests = Vec::new();
 
                 // Find class level path if any
-                let class_path = path_regex
-                    .captures(&content)
+                let class_path_regex = Regex::new(r#"(?m)@Path\s*\(\s*['"]([^'"]+)['"]\s*\)\s*(?:public\s+)?(?:class|record)"#).unwrap();
+                let class_path = class_path_regex.captures(&content)
                     .map(|c| c[1].to_string())
                     .unwrap_or_default();
 
                 for cap in path_regex.captures_iter(&content) {
                     let url_path = &cap[1];
-                    if url_path == &class_path {
+                    
+                    // Skip class level path as it's handled in the final URL
+                    let match_end = cap.get(0).unwrap().end();
+                    let context_after = &content[match_end..std::cmp::min(content.len(), match_end + 50)];
+                    if context_after.contains("class") || context_after.contains("record") {
                         continue;
-                    } // Skip class level path as it's handled in the final URL
+                    }
 
                     // Look for the method annotation right before or after the path annotation
                     // This is naive, but works for basic cases
@@ -82,12 +86,13 @@ impl SourceParser for QuarkusParser {
                         class_path.trim_end_matches('/'),
                         url_path.trim_start_matches('/')
                     );
+                    let full_path = if full_path.is_empty() { String::new() } else if full_path.starts_with('/') { full_path } else { format!("/{}", full_path) };
 
                     requests.push(CollectionItem::Request(Request {
                         id: uuid::Uuid::new_v4().to_string(),
                         name: format!("{} {}", method_str.to_uppercase(), full_path),
                         method,
-                        url: format!("{{{{baseUrl}}}}/{}", full_path.trim_start_matches('/')),
+                        url: format!("{{{{baseUrl}}}}{}", full_path),
                         params: Vec::new(),
                         headers: Vec::new(),
                         auth: Auth::default(),

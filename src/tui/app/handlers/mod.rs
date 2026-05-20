@@ -45,6 +45,8 @@ impl App {
             response_stats_data: None,
             selected_stats_tab: StatsTab::Overview,            pending_actions: Vec::new(),            response_scroll: 0,
             response_horizontal_scroll: 0,
+            response_cursor_row: 0,
+            response_cursor_col: 0,
             stats_scroll: 0,
             details_scroll: 0,            collections_state: ListState::default(),
             apis_state: ListState::default(),

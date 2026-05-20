@@ -97,6 +97,12 @@ impl SourceParser for FlaskParser {
             .filter(|e| e.path().extension().map_or(false, |ext| ext == "py"))
         {
             if let Ok(content) = std::fs::read_to_string(entry.path()) {
+                // Detect blueprint prefix
+                let blueprint_prefix_regex = Regex::new(r#"Blueprint\s*\(\s*(?:.*url_prefix\s*=\s*)?['"]([^'"]+)['"]"#).unwrap();
+                let blueprint_prefix = blueprint_prefix_regex.captures(&content)
+                    .map(|c| c[1].to_string())
+                    .unwrap_or_default();
+
                 let mut requests = Vec::new();
 
                 for cap in route_regex.captures_iter(&content) {
@@ -147,11 +153,14 @@ impl SourceParser for FlaskParser {
                             }
                         }
 
+                        let full_path = format!("{}/{}", blueprint_prefix.trim_end_matches('/'), url_path.trim_start_matches('/'));
+                        let full_path = if full_path.is_empty() { String::new() } else if full_path.starts_with('/') { full_path } else { format!("/{}", full_path) };
+
                         requests.push(CollectionItem::Request(Request {
                             id: uuid::Uuid::new_v4().to_string(),
-                            name: format!("{} {}", m.to_uppercase(), url_path),
+                            name: format!("{} {}", m.to_uppercase(), full_path),
                             method,
-                            url: format!("{{{{baseUrl}}}}{}", url_path),
+                            url: format!("{{{{baseUrl}}}}{}", full_path),
                             params: Vec::new(),
                             headers: Vec::new(),
                             auth: Auth::default(),
