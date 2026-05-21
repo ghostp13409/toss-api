@@ -4,6 +4,8 @@ A Vim-inspired, high-performance TUI and CLI API client built with Rust and Rata
 
 `toss-api` is designed for developers who want a fast, keyboard-driven workflow for exploring and testing APIs without leaving the terminal. It combines the visual power of an API client with the efficiency of a Vim-like interface.
 
+![toss-demo](./assets/toss-demo.gif)
+
 ---
 
 ## 🚀 Key Features
@@ -22,23 +24,26 @@ A Vim-inspired, high-performance TUI and CLI API client built with Rust and Rata
 You can install `toss` using `cargo`, the Rust package manager.
 
 ### From Crates.io (Recommended)
+
 ```bash
 cargo install toss-api
 ```
 
 ### From GitHub
+
 ```bash
 cargo install --git https://github.com/ghostp13409/toss-api
 ```
 
 ### From Source
+
 ```bash
 git clone https://github.com/ghostp13409/toss-api
 cd toss-api
 cargo install --path .
 ```
 
-*Note: Ensure you have the Rust toolchain installed from [rustup.rs](https://rustup.rs/).*
+_Note: Ensure you have the Rust toolchain installed from [rustup.rs](https://rustup.rs/)._
 
 ## 📖 Quickstart
 
@@ -51,6 +56,7 @@ cargo install --path .
 ## 🏗️ Supported Frameworks (for Smart Parsing)
 
 Toss can intelligently detect and extract endpoints from the following frameworks:
+
 - **Node.js**: Express.js, Next.js
 - **Python**: FastAPI, Flask, Django
 - **Java/Kotlin**: Spring Boot, Quarkus
@@ -62,6 +68,7 @@ Toss can intelligently detect and extract endpoints from the following framework
 ## 🛠️ CLI Mode
 
 For quick actions without entering the UI:
+
 - `toss-api send GET https://api.example.com/users`
 - `toss-api run "My Collection" "Get User"`
 - `toss-api collections list`
@@ -91,4 +98,5 @@ Run `toss-api --help` for the full command list.
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-F16061?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/parthgajjar)
 
 ---
-*Created with ❤️ by [Parth Gajjar](https://github.com/ghostp13409)*
+
+_Created with ❤️ by [Parth Gajjar](https://github.com/ghostp13409)_
