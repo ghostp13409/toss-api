@@ -117,7 +117,7 @@ impl SourceParser for AspNetParser {
         {
             if let Ok(content) = std::fs::read_to_string(entry.path()) {
                 // Detect class-level route
-                let class_route_regex = Regex::new(r#"(?m)\[Route\s*\(\s*["']([^"']*)["']\s*\)\]\s*(?:public|internal)?\s+(?:class|record)"#).unwrap();
+                let class_route_regex = Regex::new(r#"(?m)\[Route\s*\(\s*["']([^"']*)["']\s*\)\](?:[\s\S]*?)(?:class|record)"#).unwrap();
                 let class_prefix = class_route_regex
                     .captures(&content)
                     .map(|c| c[1].to_string())
@@ -150,11 +150,16 @@ impl SourceParser for AspNetParser {
 
                     let body = find_body(cap.get(0).unwrap().end());
 
-                    let full_path = format!(
-                        "{}/{}",
-                        class_prefix.trim_end_matches('/'),
-                        url_path.trim_start_matches('/')
-                    );
+                    let full_path = if url_path.is_empty() {
+                        class_prefix.clone()
+                    } else {
+                        format!(
+                            "{}/{}",
+                            class_prefix.trim_end_matches('/'),
+                            url_path.trim_start_matches('/')
+                        )
+                    };
+
                     let full_path = if full_path.is_empty() {
                         String::new()
                     } else if full_path.starts_with('/') {
