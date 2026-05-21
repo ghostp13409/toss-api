@@ -99,7 +99,7 @@ impl SourceParser for FlaskParser {
             if let Ok(content) = std::fs::read_to_string(entry.path()) {
                 // Detect blueprint prefix
                 let blueprint_prefix_regex =
-                    Regex::new(r#"Blueprint\s*\(\s*(?:.*url_prefix\s*=\s*)?['"]([^'"]+)['"]"#)
+                    Regex::new(r#"Blueprint\s*\(\s*(?:[\s\S]*?url_prefix\s*=\s*)?['"]([^'"]+)['"]"#)
                         .unwrap();
                 let blueprint_prefix = blueprint_prefix_regex
                     .captures(&content)

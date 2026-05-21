@@ -120,17 +120,15 @@ impl SourceParser for SpringParser {
         }
 
         // Pass 2: Endpoint Extraction
-        // Matches @GetMapping("/path"), @PostMapping("/path"), etc.
-        let mapping_regex = Regex::new(
-            r#"@(Get|Post|Put|Delete|Patch)Mapping\s*\(\s*(?:value\s*=\s*)?['"]([^'"]+)['"]"#,
-        )
-        .unwrap();
+        // Matches @GetMapping("/path"), @PostMapping("/path"), @GetMapping, etc.
+        let mapping_regex = Regex::new(r#"@(Get|Post|Put|Delete|Patch)Mapping(\s*\([^)]*\))?"#).unwrap();
 
         // Matches @RequestMapping(value = "/path", method = RequestMethod.GET)
-        let request_mapping_regex = Regex::new(
-            r#"@RequestMapping\s*\(\s*(?:value\s*=\s*)?['"]([^'"]+)['"](?:.*method\s*=\s*RequestMethod\.(GET|POST|PUT|DELETE|PATCH))?"#,
-        )
-        .unwrap();
+        let request_mapping_regex = Regex::new(r#"@RequestMapping(\s*\([^)]*\))?"#).unwrap();
+
+        let path_value_regex = Regex::new(r#"['"]([^'"]*)['"]"#).unwrap();
+        let method_value_regex =
+            Regex::new(r#"method\s*=\s*RequestMethod\.(GET|POST|PUT|DELETE|PATCH)"#).unwrap();
 
         let request_body_regex =
             Regex::new(r"@RequestBody\s+([a-zA-Z0-9_<>]+)\s+([a-zA-Z0-9_]+)").unwrap();
@@ -163,7 +161,7 @@ impl SourceParser for SpringParser {
                 }
 
                 // Detect class-level prefix
-                let class_mapping_regex = Regex::new(r#"(?m)@RequestMapping\s*\(\s*(?:value\s*=\s*)?['"]([^'"]+)['"]\s*\)\s*(?:public\s+)?(?:class|record)"#).unwrap();
+                let class_mapping_regex = Regex::new(r#"(?m)@RequestMapping\s*\(\s*(?:(?:value|path)\s*=\s*)?['"]([^'"]+)['"]\s*\)(?:[\s\S]*?)(?:class|record)"#).unwrap();
                 let class_prefix = class_mapping_regex
                     .captures(&content)
                     .map(|c| c[1].to_string())
@@ -186,7 +184,12 @@ impl SourceParser for SpringParser {
                 // Check for @XMapping
                 for cap in mapping_regex.captures_iter(&content) {
                     let method_prefix = &cap[1];
-                    let url_path = &cap[2];
+                    let mut url_path = "";
+                    if let Some(parens) = cap.get(2) {
+                        if let Some(pcap) = path_value_regex.captures(parens.as_str()) {
+                            url_path = pcap.get(1).map(|m| m.as_str()).unwrap_or("");
+                        }
+                    }
 
                     let method = match method_prefix.to_lowercase().as_str() {
                         "post" => Method::Post,
@@ -198,11 +201,16 @@ impl SourceParser for SpringParser {
 
                     let body = find_body(cap.get(0).unwrap().end());
 
-                    let full_path = format!(
-                        "{}/{}",
-                        class_prefix.trim_end_matches('/'),
-                        url_path.trim_start_matches('/')
-                    );
+                    let full_path = if url_path.is_empty() {
+                        class_prefix.clone()
+                    } else {
+                        format!(
+                            "{}/{}",
+                            class_prefix.trim_end_matches('/'),
+                            url_path.trim_start_matches('/')
+                        )
+                    };
+
                     let full_path = if full_path.is_empty() {
                         String::new()
                     } else if full_path.starts_with('/') {
@@ -227,20 +235,28 @@ impl SourceParser for SpringParser {
 
                 // Check for @RequestMapping
                 for cap in request_mapping_regex.captures_iter(&content) {
-                    let url_path = &cap[1];
+                    let mut url_path = "";
+                    let mut method_str = "GET";
+
+                    if let Some(parens) = cap.get(1) {
+                        let parens_str = parens.as_str();
+                        if let Some(pcap) = path_value_regex.captures(parens_str) {
+                            url_path = pcap.get(1).map(|m| m.as_str()).unwrap_or("");
+                        }
+                        if let Some(mcap) = method_value_regex.captures(parens_str) {
+                            method_str = mcap.get(1).map(|m| m.as_str()).unwrap_or("GET");
+                        }
+                    }
 
                     // If this is the same as class_prefix, it might be the class annotation itself
                     // In Spring, @RequestMapping can be on class and method.
                     // Naive check: if it's followed by 'class' or 'record', skip it here
-                    let match_start = cap.get(0).unwrap().start();
                     let match_end = cap.get(0).unwrap().end();
                     let context_after =
                         &content[match_end..std::cmp::min(content.len(), match_end + 50)];
                     if context_after.contains("class") || context_after.contains("record") {
                         continue;
                     }
-
-                    let method_str = cap.get(2).map(|m| m.as_str()).unwrap_or("GET");
 
                     let method = match method_str.to_uppercase().as_str() {
                         "POST" => Method::Post,
@@ -252,11 +268,16 @@ impl SourceParser for SpringParser {
 
                     let body = find_body(match_end);
 
-                    let full_path = format!(
-                        "{}/{}",
-                        class_prefix.trim_end_matches('/'),
-                        url_path.trim_start_matches('/')
-                    );
+                    let full_path = if url_path.is_empty() {
+                        class_prefix.clone()
+                    } else {
+                        format!(
+                            "{}/{}",
+                            class_prefix.trim_end_matches('/'),
+                            url_path.trim_start_matches('/')
+                        )
+                    };
+
                     let full_path = if full_path.is_empty() {
                         String::new()
                     } else if full_path.starts_with('/') {

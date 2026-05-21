@@ -128,7 +128,7 @@ impl SourceParser for FastApiParser {
             if let Ok(content) = std::fs::read_to_string(entry.path()) {
                 // Detect router prefix
                 let router_prefix_regex =
-                    Regex::new(r#"APIRouter\s*\(\s*(?:.*prefix\s*=\s*)?['"]([^'"]+)['"]"#).unwrap();
+                    Regex::new(r#"APIRouter\s*\(\s*(?:[\s\S]*?prefix\s*=\s*)?['"]([^'"]+)['"]"#).unwrap();
                 let router_prefix = router_prefix_regex
                     .captures(&content)
                     .map(|c| c[1].to_string())
