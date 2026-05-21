@@ -132,12 +132,8 @@ impl SourceParser for GolangParser {
                             .map(|m| m.as_str())
                             .unwrap_or("");
                         if let Some(json_body) = registry.generate_json(type_name) {
-                            body = RequestBody::raw(
-                                json_body,
-                                "application/json".to_string(),
-                            );
+                            body = RequestBody::raw(json_body, "application/json".to_string());
                         }
-
                     }
 
                     requests.push(CollectionItem::Request(Request {

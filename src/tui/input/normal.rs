@@ -72,53 +72,51 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
             }
             return;
         }
-        KeyCode::Char('G') => {
-            match app.focused_panel {
-                FocusedPanel::Collections => {
-                    app.selected_collection_index =
-                        app.get_visible_collections().len().saturating_sub(1)
-                }
-                FocusedPanel::Apis => {
-                    app.selected_api_index = app.get_visible_items().len().saturating_sub(1)
-                }
-                FocusedPanel::Environments => {
-                    app.selected_env_index =
-                        app.get_active_collection_env_vars().len().saturating_sub(1)
-                }
-                FocusedPanel::Details => {
-                    if let Some(req) = app.get_current_request() {
-                        let max_rows = match app.selected_property_tab {
-                            PropertyTab::Params => req.params.len(),
-                            PropertyTab::Headers => req.headers.len(),
-                            PropertyTab::Auth => match req.auth.selected {
-                                crate::core::collection::AuthType::None => 0,
-                                crate::core::collection::AuthType::Bearer => 1,
-                                crate::core::collection::AuthType::Basic => 2,
-                                crate::core::collection::AuthType::ApiKey => 3,
-                            },
-                            PropertyTab::Body => match req.body.selected {
-                                crate::core::collection::BodyType::FormData => {
-                                    req.body.form_data.items.len()
-                                }
-                                crate::core::collection::BodyType::XWwwFormUrlEncoded => {
-                                    req.body.x_www_form_urlencoded.items.len()
-                                }
-                                _ => 0,
-                            },
-                            _ => 0,
-                        };
-                        app.property_editor_row = max_rows.saturating_sub(1);
-                    }
-                }
-                FocusedPanel::Response => {
-                    app.response_scroll = 1000;
-                }
-                FocusedPanel::Stats => {
-                    app.stats_scroll = 100;
-                }
-                _ => {}
+        KeyCode::Char('G') => match app.focused_panel {
+            FocusedPanel::Collections => {
+                app.selected_collection_index =
+                    app.get_visible_collections().len().saturating_sub(1)
             }
-        }
+            FocusedPanel::Apis => {
+                app.selected_api_index = app.get_visible_items().len().saturating_sub(1)
+            }
+            FocusedPanel::Environments => {
+                app.selected_env_index =
+                    app.get_active_collection_env_vars().len().saturating_sub(1)
+            }
+            FocusedPanel::Details => {
+                if let Some(req) = app.get_current_request() {
+                    let max_rows = match app.selected_property_tab {
+                        PropertyTab::Params => req.params.len(),
+                        PropertyTab::Headers => req.headers.len(),
+                        PropertyTab::Auth => match req.auth.selected {
+                            crate::core::collection::AuthType::None => 0,
+                            crate::core::collection::AuthType::Bearer => 1,
+                            crate::core::collection::AuthType::Basic => 2,
+                            crate::core::collection::AuthType::ApiKey => 3,
+                        },
+                        PropertyTab::Body => match req.body.selected {
+                            crate::core::collection::BodyType::FormData => {
+                                req.body.form_data.items.len()
+                            }
+                            crate::core::collection::BodyType::XWwwFormUrlEncoded => {
+                                req.body.x_www_form_urlencoded.items.len()
+                            }
+                            _ => 0,
+                        },
+                        _ => 0,
+                    };
+                    app.property_editor_row = max_rows.saturating_sub(1);
+                }
+            }
+            FocusedPanel::Response => {
+                app.response_scroll = 1000;
+            }
+            FocusedPanel::Stats => {
+                app.stats_scroll = 100;
+            }
+            _ => {}
+        },
 
         // Page Up/Down (Ctrl-u / Ctrl-d)
         KeyCode::Char('u') if key.modifiers.contains(KeyModifiers::CONTROL) => {
@@ -333,7 +331,8 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                             app.current_request_id = Some(id.clone());
                             app.method = *method;
                             let id_clone = id.clone();
-                            if let Some(col) = app.collections.get_mut(app.active_collection_index) {
+                            if let Some(col) = app.collections.get_mut(app.active_collection_index)
+                            {
                                 if let Some(req) = col.find_request_mut(&id_clone) {
                                     app.url = req.url.clone();
                                     req.auth.auto_select();
@@ -399,7 +398,8 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                                     return;
                                 }
                             }
-                            crate::core::collection::BodyType::Raw | crate::core::collection::BodyType::None => {
+                            crate::core::collection::BodyType::Raw
+                            | crate::core::collection::BodyType::None => {
                                 return;
                             }
                         }

@@ -29,17 +29,19 @@ pub fn render_notification(f: &mut Frame, message: &str) {
     // Notification size: width 35, height 3
     let width = 35;
     let height = 3;
-    
+
     // Position: bottom-right with 1 character margin
     let x = size.width.saturating_sub(width).saturating_sub(1);
     let y = size.height.saturating_sub(height).saturating_sub(1);
-    
+
     let area = Rect::new(x, y, width, height);
     f.render_widget(Clear, area);
 
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Green).add_modifier(Modifier::BOLD));
+    let block = Block::default().borders(Borders::ALL).border_style(
+        Style::default()
+            .fg(Color::Green)
+            .add_modifier(Modifier::BOLD),
+    );
 
     let p = Paragraph::new(format!(" {} ", message))
         .block(block)

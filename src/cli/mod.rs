@@ -352,10 +352,18 @@ fn process_base_url(
 fn get_interactive_base_url() -> String {
     use std::io::{self, Write};
 
-    println!("{}", "\n--- Interactive Base URL Builder ---".with(Color::Yellow).bold());
+    println!(
+        "{}",
+        "\n--- Interactive Base URL Builder ---"
+            .with(Color::Yellow)
+            .bold()
+    );
 
     let mut protocol = String::new();
-    print!("{} Choose protocol (1: http, 2: https) [1]: ", "?".with(Color::Green));
+    print!(
+        "{} Choose protocol (1: http, 2: https) [1]: ",
+        "?".with(Color::Green)
+    );
     io::stdout().flush().unwrap();
     io::stdin().read_line(&mut protocol).unwrap();
     let protocol = match protocol.trim() {
@@ -364,17 +372,27 @@ fn get_interactive_base_url() -> String {
     };
 
     let mut host_type = String::new();
-    print!("{} Choose host type (1: local, 2: remote) [1]: ", "?".with(Color::Green));
+    print!(
+        "{} Choose host type (1: local, 2: remote) [1]: ",
+        "?".with(Color::Green)
+    );
     io::stdout().flush().unwrap();
     io::stdin().read_line(&mut host_type).unwrap();
     let host = match host_type.trim() {
         "2" | "remote" => {
             let mut remote_host = String::new();
-            print!("{} Enter remote host (e.g. example.com): ", "?".with(Color::Green));
+            print!(
+                "{} Enter remote host (e.g. example.com): ",
+                "?".with(Color::Green)
+            );
             io::stdout().flush().unwrap();
             io::stdin().read_line(&mut remote_host).unwrap();
             let h = remote_host.trim().to_string();
-            if h.is_empty() { "example.com".to_string() } else { h }
+            if h.is_empty() {
+                "example.com".to_string()
+            } else {
+                h
+            }
         }
         _ => "localhost".to_string(),
     };

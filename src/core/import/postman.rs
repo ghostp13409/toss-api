@@ -132,7 +132,6 @@ fn parse_item(item: &Value) -> Option<CollectionItem> {
             RequestBody::default()
         };
 
-
         Some(CollectionItem::Request(Request {
             id: uuid::Uuid::new_v4().to_string(),
             name,

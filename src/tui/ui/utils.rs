@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use crate::cli::args::Method;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
@@ -6,6 +5,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders},
 };
+use std::borrow::Cow;
 
 pub fn get_method_color(method_str: &str) -> Color {
     match method_str.to_uppercase().as_str() {
@@ -136,7 +136,7 @@ pub fn extract_json_value(line: &str) -> (Option<String>, String) {
     if let Some(colon_pos) = line.find(':') {
         let key_part = line[..colon_pos].trim();
         let value_part = line[colon_pos + 1..].trim();
-        
+
         let key = if key_part.starts_with('"') && key_part.ends_with('"') && key_part.len() >= 2 {
             Some(key_part[1..key_part.len() - 1].to_string())
         } else {
@@ -146,12 +146,13 @@ pub fn extract_json_value(line: &str) -> (Option<String>, String) {
         // Remove trailing comma if present
         let value_part = value_part.trim_end_matches(',');
 
-        let value = if value_part.starts_with('"') && value_part.ends_with('"') && value_part.len() >= 2 {
-            // String value
-            value_part[1..value_part.len() - 1].to_string()
-        } else {
-            value_part.to_string()
-        };
+        let value =
+            if value_part.starts_with('"') && value_part.ends_with('"') && value_part.len() >= 2 {
+                // String value
+                value_part[1..value_part.len() - 1].to_string()
+            } else {
+                value_part.to_string()
+            };
 
         return (key, value);
     }

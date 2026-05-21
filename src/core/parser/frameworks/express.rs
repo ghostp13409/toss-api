@@ -153,10 +153,7 @@ impl SourceParser for ExpressParser {
                     if let Some(tcap) = req_type_regex.captures(search_area) {
                         let body_type = &tcap[1];
                         if let Some(json_body) = registry.generate_json(body_type) {
-                            body = RequestBody::raw(
-                                json_body,
-                                "application/json".to_string(),
-                            );
+                            body = RequestBody::raw(json_body, "application/json".to_string());
                         }
                     }
 

@@ -98,8 +98,11 @@ impl SourceParser for FlaskParser {
         {
             if let Ok(content) = std::fs::read_to_string(entry.path()) {
                 // Detect blueprint prefix
-                let blueprint_prefix_regex = Regex::new(r#"Blueprint\s*\(\s*(?:.*url_prefix\s*=\s*)?['"]([^'"]+)['"]"#).unwrap();
-                let blueprint_prefix = blueprint_prefix_regex.captures(&content)
+                let blueprint_prefix_regex =
+                    Regex::new(r#"Blueprint\s*\(\s*(?:.*url_prefix\s*=\s*)?['"]([^'"]+)['"]"#)
+                        .unwrap();
+                let blueprint_prefix = blueprint_prefix_regex
+                    .captures(&content)
                     .map(|c| c[1].to_string())
                     .unwrap_or_default();
 
@@ -141,7 +144,8 @@ impl SourceParser for FlaskParser {
                                     if var_name.to_lowercase().contains(&model_name.to_lowercase())
                                         || model_name.to_lowercase().contains(var_name)
                                     {
-                                        if let Some(json_body) = registry.generate_json(model_name) {
+                                        if let Some(json_body) = registry.generate_json(model_name)
+                                        {
                                             body = RequestBody::raw(
                                                 json_body,
                                                 "application/json".to_string(),
@@ -153,8 +157,18 @@ impl SourceParser for FlaskParser {
                             }
                         }
 
-                        let full_path = format!("{}/{}", blueprint_prefix.trim_end_matches('/'), url_path.trim_start_matches('/'));
-                        let full_path = if full_path.is_empty() { String::new() } else if full_path.starts_with('/') { full_path } else { format!("/{}", full_path) };
+                        let full_path = format!(
+                            "{}/{}",
+                            blueprint_prefix.trim_end_matches('/'),
+                            url_path.trim_start_matches('/')
+                        );
+                        let full_path = if full_path.is_empty() {
+                            String::new()
+                        } else if full_path.starts_with('/') {
+                            full_path
+                        } else {
+                            format!("/{}", full_path)
+                        };
 
                         requests.push(CollectionItem::Request(Request {
                             id: uuid::Uuid::new_v4().to_string(),

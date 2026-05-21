@@ -1,5 +1,7 @@
 use crate::core::collection::KVParam;
-use crate::tui::app::{App, FocusedPanel, PropertyEditorField, PropertyTab, RequestBarPart, StatsTab};
+use crate::tui::app::{
+    App, FocusedPanel, PropertyEditorField, PropertyTab, RequestBarPart, StatsTab,
+};
 use crate::tui::ui::syntax::{apply_env_vars, format_content, highlight_content};
 use crate::tui::ui::utils::{
     create_block, get_method_enum_color, highlight_env_vars, title_with_key,
@@ -46,7 +48,8 @@ pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
     let response_area_inner = response_block.inner(response_area[0]);
     let response_height = response_area_inner.height;
     let response_width = response_area_inner.width;
-    let mut highlighted_body = highlight_content(trimmed_body, app.response_content_type.as_deref());
+    let mut highlighted_body =
+        highlight_content(trimmed_body, app.response_content_type.as_deref());
     let line_count = highlighted_body.lines.len() as u16;
 
     // Adjust cursor and scroll
@@ -92,7 +95,10 @@ pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
     };
 
     let stat_block = create_block(
-        title_with_key("T", format!(" Stats: [{}] (Press 't' to change) ", stats_tab_name)),
+        title_with_key(
+            "T",
+            format!(" Stats: [{}] (Press 't' to change) ", stats_tab_name),
+        ),
         app.focused_panel == FocusedPanel::Stats,
     );
 
@@ -136,7 +142,12 @@ pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
                 ]));
                 stat_lines.push(Line::from(vec![
                     Span::styled(" Method: ", Style::default().fg(Color::DarkGray)),
-                    Span::styled(&stats.method, Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+                    Span::styled(
+                        &stats.method,
+                        Style::default()
+                            .fg(Color::Cyan)
+                            .add_modifier(Modifier::BOLD),
+                    ),
                 ]));
 
                 if let Some(status) = &app.response_status {
@@ -151,7 +162,10 @@ pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
                     };
                     stat_lines.push(Line::from(vec![
                         Span::styled(" Status: ", Style::default().fg(Color::DarkGray)),
-                        Span::styled(status, Style::default().fg(color).add_modifier(Modifier::BOLD)),
+                        Span::styled(
+                            status,
+                            Style::default().fg(color).add_modifier(Modifier::BOLD),
+                        ),
                     ]));
                 }
                 stat_lines.push(Line::from(vec![
@@ -168,7 +182,10 @@ pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
             StatsTab::Network => {
                 stat_lines.push(Line::from(vec![
                     Span::styled(" Total Time: ", Style::default().fg(Color::DarkGray)),
-                    Span::styled(format!("{:?}", stats.total_time), Style::default().add_modifier(Modifier::BOLD)),
+                    Span::styled(
+                        format!("{:?}", stats.total_time),
+                        Style::default().add_modifier(Modifier::BOLD),
+                    ),
                 ]));
                 stat_lines.push(Line::raw(""));
 
@@ -180,7 +197,13 @@ pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
                         ("DNS Lookup", stats.dns_time, Color::Blue),
                         ("TCP Connect", stats.connect_time, Color::Cyan),
                         ("TLS Handshake", stats.tls_time, Color::Magenta),
-                        ("TTFB (Server)", stats.ttfb.saturating_sub(stats.dns_time + stats.connect_time + stats.tls_time), Color::Yellow),
+                        (
+                            "TTFB (Server)",
+                            stats.ttfb.saturating_sub(
+                                stats.dns_time + stats.connect_time + stats.tls_time,
+                            ),
+                            Color::Yellow,
+                        ),
                         ("Download", stats.download_time, Color::Green),
                     ];
 
@@ -202,7 +225,10 @@ pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
                 let total_size = stats.header_size + stats.body_size;
                 stat_lines.push(Line::from(vec![
                     Span::styled(" Total Size: ", Style::default().fg(Color::DarkGray)),
-                    Span::styled(format_size(total_size), Style::default().add_modifier(Modifier::BOLD)),
+                    Span::styled(
+                        format_size(total_size),
+                        Style::default().add_modifier(Modifier::BOLD),
+                    ),
                 ]));
                 stat_lines.push(Line::raw(""));
 
@@ -210,8 +236,11 @@ pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
                     let h_perc_val = (stats.header_size as f64 / total_size as f64) * 100.0;
                     let b_perc_val = (stats.body_size as f64 / total_size as f64) * 100.0;
                     let bar_width: usize = 15;
-                    let h_width = ((stats.header_size as f64 / total_size as f64) * bar_width as f64).round() as usize;
-                    let b_width = ((stats.body_size as f64 / total_size as f64) * bar_width as f64).round() as usize;
+                    let h_width = ((stats.header_size as f64 / total_size as f64)
+                        * bar_width as f64)
+                        .round() as usize;
+                    let b_width = ((stats.body_size as f64 / total_size as f64) * bar_width as f64)
+                        .round() as usize;
 
                     stat_lines.push(Line::from(vec![
                         Span::styled(" ├── Headers: ", Style::default().fg(Color::DarkGray)),
@@ -220,7 +249,10 @@ pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
                     stat_lines.push(Line::from(vec![
                         Span::raw(" │   ["),
                         Span::styled("█".repeat(h_width), Style::default().fg(Color::Blue)),
-                        Span::styled("░".repeat(bar_width.saturating_sub(h_width)), Style::default().fg(Color::DarkGray)),
+                        Span::styled(
+                            "░".repeat(bar_width.saturating_sub(h_width)),
+                            Style::default().fg(Color::DarkGray),
+                        ),
                         Span::raw(format!("] {:.0}%", h_perc_val)),
                     ]));
 
@@ -231,7 +263,10 @@ pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
                     stat_lines.push(Line::from(vec![
                         Span::raw("     ["),
                         Span::styled("█".repeat(b_width), Style::default().fg(Color::Magenta)),
-                        Span::styled("░".repeat(bar_width.saturating_sub(b_width)), Style::default().fg(Color::DarkGray)),
+                        Span::styled(
+                            "░".repeat(bar_width.saturating_sub(b_width)),
+                            Style::default().fg(Color::DarkGray),
+                        ),
                         Span::raw(format!("] {:.0}%", b_perc_val)),
                     ]));
 
@@ -251,20 +286,35 @@ pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
                 let reset = stats.headers.get("x-ratelimit-reset");
 
                 if let (Some(l), Some(r)) = (limit, remaining) {
-                    stat_lines.push(Line::styled(" Rate Limit", Style::default().fg(Color::Cyan)));
+                    stat_lines.push(Line::styled(
+                        " Rate Limit",
+                        Style::default().fg(Color::Cyan),
+                    ));
                     stat_lines.push(Line::raw(format!("  {} / {}", r, l)));
                     if let (Ok(rv), Ok(lv)) = (r.parse::<f64>(), l.parse::<f64>()) {
                         let perc = (rv / lv) * 10.0;
-                        let color = if perc < 2.0 { Color::Red } else if perc < 5.0 { Color::Yellow } else { Color::Green };
+                        let color = if perc < 2.0 {
+                            Color::Red
+                        } else if perc < 5.0 {
+                            Color::Yellow
+                        } else {
+                            Color::Green
+                        };
                         stat_lines.push(Line::from(vec![
                             Span::raw("  ["),
-                            Span::styled("█".repeat(perc.round() as usize), Style::default().fg(color)),
-                            Span::styled("░".repeat(10usize.saturating_sub(perc.round() as usize)), Style::default().fg(Color::DarkGray)),
+                            Span::styled(
+                                "█".repeat(perc.round() as usize),
+                                Style::default().fg(color),
+                            ),
+                            Span::styled(
+                                "░".repeat(10usize.saturating_sub(perc.round() as usize)),
+                                Style::default().fg(Color::DarkGray),
+                            ),
                             Span::raw("]"),
                         ]));
                     }
                     if let Some(res) = reset {
-                         stat_lines.push(Line::raw(format!("  Resets in: {}s", res)));
+                        stat_lines.push(Line::raw(format!("  Resets in: {}s", res)));
                     }
                     stat_lines.push(Line::raw(""));
                 }
@@ -592,10 +642,8 @@ pub fn render_details_area(f: &mut Frame, app: &mut App, area: Rect) {
 
                     let formatted_body =
                         format_content(&body.raw.content, Some(body.raw.content_type.as_str()));
-                    let mut highlighted_body = highlight_content(
-                        &formatted_body,
-                        Some(body.raw.content_type.as_str()),
-                    );
+                    let mut highlighted_body =
+                        highlight_content(&formatted_body, Some(body.raw.content_type.as_str()));
                     apply_env_vars(&mut highlighted_body);
 
                     let p = Paragraph::new(highlighted_body)

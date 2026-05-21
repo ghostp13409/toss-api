@@ -216,7 +216,10 @@ where
                             let start = Instant::now();
                             let engine = RequestEngine::with_client(client);
 
-                            match engine.send(method, &url, headers, Vec::new(), body_type, auth).await {
+                            match engine
+                                .send(method, &url, headers, Vec::new(), body_type, auth)
+                                .await
+                            {
                                 Ok(res) => {
                                     let ttfb = start.elapsed();
                                     let status = Some(res.status().to_string());
@@ -240,7 +243,8 @@ where
                                     let total_time = start.elapsed();
 
                                     let body_size = body_bytes.len();
-                                    let body_text = String::from_utf8_lossy(&body_bytes).into_owned();
+                                    let body_text =
+                                        String::from_utf8_lossy(&body_bytes).into_owned();
 
                                     let stats = ResponseStats {
                                         total_time,
@@ -258,44 +262,52 @@ where
                                         remote_addr,
                                     };
 
-                                    let _ = tx_res.send(AppEvent::HttpResponse(
-                                        body_text,
-                                        status,
-                                        Some(stats),
-                                        content_type,
-                                    )).await;
+                                    let _ = tx_res
+                                        .send(AppEvent::HttpResponse(
+                                            body_text,
+                                            status,
+                                            Some(stats),
+                                            content_type,
+                                        ))
+                                        .await;
                                 }
                                 Err(e) => {
-                                    let _ = tx_res.send(AppEvent::HttpResponse(
-                                        format!("Error: {}", e),
-                                        Some("ERROR".to_string()),
-                                        None,
-                                        None,
-                                    )).await;
+                                    let _ = tx_res
+                                        .send(AppEvent::HttpResponse(
+                                            format!("Error: {}", e),
+                                            Some("ERROR".to_string()),
+                                            None,
+                                            None,
+                                        ))
+                                        .await;
                                 }
                             }
                         });
                     }
                 }
                 TuiAction::EditBody => {
-                    let (req_id, current_body, extension) = if let Some(req) = app.get_current_request() {
-                        let (body, ct) = match req.body.selected {
-                            crate::core::collection::BodyType::Raw => (req.body.raw.content.clone(), req.body.raw.content_type.clone()),
-                            _ => (String::new(), "text/plain".to_string()),
-                        };
-                        let ext = if ct.contains("json") {
-                            "json"
-                        } else if ct.contains("xml") {
-                            "xml"
-                        } else if ct.contains("html") {
-                            "html"
+                    let (req_id, current_body, extension) =
+                        if let Some(req) = app.get_current_request() {
+                            let (body, ct) = match req.body.selected {
+                                crate::core::collection::BodyType::Raw => (
+                                    req.body.raw.content.clone(),
+                                    req.body.raw.content_type.clone(),
+                                ),
+                                _ => (String::new(), "text/plain".to_string()),
+                            };
+                            let ext = if ct.contains("json") {
+                                "json"
+                            } else if ct.contains("xml") {
+                                "xml"
+                            } else if ct.contains("html") {
+                                "html"
+                            } else {
+                                "txt"
+                            };
+                            (req.id.clone(), body, ext)
                         } else {
-                            "txt"
+                            continue;
                         };
-                        (req.id.clone(), body, ext)
-                    } else {
-                        continue;
-                    };
 
                     is_paused.store(true, Ordering::SeqCst);
 
@@ -348,7 +360,8 @@ where
                     if let Some(cb) = clipboard.as_mut() {
                         match cb.get_text() {
                             Ok(text) => {
-                                if let Some(col) = app.collections.get_mut(app.active_collection_index)
+                                if let Some(col) =
+                                    app.collections.get_mut(app.active_collection_index)
                                 {
                                     if let Some(req_id) = &app.current_request_id {
                                         if let Some(req_mut) = col.find_request_mut(req_id) {
@@ -376,7 +389,8 @@ where
                             Ok(text) => match app.input_mode {
                                 InputMode::Editing => {
                                     if app.focused_panel == FocusedPanel::RequestBar
-                                        && app.active_request_part == crate::tui::app::RequestBarPart::Url
+                                        && app.active_request_part
+                                            == crate::tui::app::RequestBarPart::Url
                                     {
                                         app.insert_string_url(&text);
                                         app.sync_params_from_url();
@@ -425,7 +439,8 @@ where
                         let text = match app.input_mode {
                             InputMode::Editing => {
                                 if app.focused_panel == FocusedPanel::RequestBar
-                                    && app.active_request_part == crate::tui::app::RequestBarPart::Url
+                                    && app.active_request_part
+                                        == crate::tui::app::RequestBarPart::Url
                                 {
                                     Some(app.url.clone())
                                 } else if app.focused_panel == FocusedPanel::Details {
@@ -436,7 +451,9 @@ where
                                     None
                                 }
                             }
-                            InputMode::Rename | InputMode::CreateItem => Some(app.rename_input.clone()),
+                            InputMode::Rename | InputMode::CreateItem => {
+                                Some(app.rename_input.clone())
+                            }
                             InputMode::Search => Some(app.search_query.clone()),
                             InputMode::Command => Some(app.command_input.clone()),
                             InputMode::Normal => {

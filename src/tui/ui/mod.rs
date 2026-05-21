@@ -122,7 +122,10 @@ fn render_cursor(f: &mut Frame, app: &mut App, chunks: &[Rect], columns: &[Rect]
                 // Find cursor position in KV editor
                 if matches!(
                     app.selected_property_tab,
-                    PropertyTab::Params | PropertyTab::Headers | PropertyTab::Auth | PropertyTab::Body
+                    PropertyTab::Params
+                        | PropertyTab::Headers
+                        | PropertyTab::Auth
+                        | PropertyTab::Body
                 ) {
                     let area = Layout::default()
                         .direction(Direction::Vertical)
@@ -215,10 +218,7 @@ fn render_cursor(f: &mut Frame, app: &mut App, chunks: &[Rect], columns: &[Rect]
             let cursor_x = app.command_input[..app.cursor_position.min(app.command_input.len())]
                 .chars()
                 .count() as u16;
-            f.set_cursor_position((
-                chunks[2].x + 10 + cursor_x,
-                chunks[2].y,
-            ));
+            f.set_cursor_position((chunks[2].x + 10 + cursor_x, chunks[2].y));
         }
         _ => {
             if app.show_method_search {

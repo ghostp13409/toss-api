@@ -44,29 +44,27 @@ pub fn handle_editing_mode(app: &mut App, key: KeyEvent) {
                         app.input_mode = InputMode::Normal;
                         app.property_editor_field = PropertyEditorField::Key;
                     }
-                    PropertyTab::Params | PropertyTab::Headers => {
-                        match app.property_editor_field {
-                            PropertyEditorField::Key => {
-                                let current_val = app.get_kv_editor_value();
-                                if current_val.trim().is_empty() {
-                                    app.error_message = Some("Key cannot be empty".to_string());
-                                    return;
-                                }
-                                app.property_editor_field = PropertyEditorField::Value;
-                                let current_val = app.get_kv_editor_value();
-                                app.cursor_position = current_val.len();
+                    PropertyTab::Params | PropertyTab::Headers => match app.property_editor_field {
+                        PropertyEditorField::Key => {
+                            let current_val = app.get_kv_editor_value();
+                            if current_val.trim().is_empty() {
+                                app.error_message = Some("Key cannot be empty".to_string());
+                                return;
                             }
-                            PropertyEditorField::Value => {
-                                app.property_editor_field = PropertyEditorField::Description;
-                                let current_val = app.get_kv_editor_value();
-                                app.cursor_position = current_val.len();
-                            }
-                            PropertyEditorField::Description => {
-                                app.input_mode = InputMode::Normal;
-                                app.property_editor_field = PropertyEditorField::Key;
-                            }
+                            app.property_editor_field = PropertyEditorField::Value;
+                            let current_val = app.get_kv_editor_value();
+                            app.cursor_position = current_val.len();
                         }
-                    }
+                        PropertyEditorField::Value => {
+                            app.property_editor_field = PropertyEditorField::Description;
+                            let current_val = app.get_kv_editor_value();
+                            app.cursor_position = current_val.len();
+                        }
+                        PropertyEditorField::Description => {
+                            app.input_mode = InputMode::Normal;
+                            app.property_editor_field = PropertyEditorField::Key;
+                        }
+                    },
                     PropertyTab::Body => {
                         match app.property_editor_field {
                             PropertyEditorField::Key => {

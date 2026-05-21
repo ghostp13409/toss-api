@@ -21,7 +21,9 @@ impl SpringParser {
             "string" => FieldType::String,
             "int" | "integer" | "long" | "double" | "float" | "bigdecimal" => FieldType::Number,
             "boolean" | "bool" => FieldType::Boolean,
-            "localdate" | "localdatetime" | "instant" | "zodatetime" | "date" => FieldType::DateTime,
+            "localdate" | "localdatetime" | "instant" | "zodatetime" | "date" => {
+                FieldType::DateTime
+            }
             t if t.contains("map") => {
                 FieldType::Map(Box::new(FieldType::String), Box::new(FieldType::Unknown))
             }
@@ -162,7 +164,8 @@ impl SourceParser for SpringParser {
 
                 // Detect class-level prefix
                 let class_mapping_regex = Regex::new(r#"(?m)@RequestMapping\s*\(\s*(?:value\s*=\s*)?['"]([^'"]+)['"]\s*\)\s*(?:public\s+)?(?:class|record)"#).unwrap();
-                let class_prefix = class_mapping_regex.captures(&content)
+                let class_prefix = class_mapping_regex
+                    .captures(&content)
                     .map(|c| c[1].to_string())
                     .unwrap_or_default();
 
@@ -174,12 +177,8 @@ impl SourceParser for SpringParser {
                     if let Some(bcap) = request_body_regex.captures(&content[pos..slice_end]) {
                         let type_name = &bcap[1];
                         if let Some(json_body) = registry.generate_json(type_name) {
-                            return RequestBody::raw(
-                                json_body,
-                                "application/json".to_string(),
-                            );
+                            return RequestBody::raw(json_body, "application/json".to_string());
                         }
-
                     }
                     RequestBody::default()
                 };
@@ -199,8 +198,18 @@ impl SourceParser for SpringParser {
 
                     let body = find_body(cap.get(0).unwrap().end());
 
-                    let full_path = format!("{}/{}", class_prefix.trim_end_matches('/'), url_path.trim_start_matches('/'));
-                    let full_path = if full_path.is_empty() { String::new() } else if full_path.starts_with('/') { full_path } else { format!("/{}", full_path) };
+                    let full_path = format!(
+                        "{}/{}",
+                        class_prefix.trim_end_matches('/'),
+                        url_path.trim_start_matches('/')
+                    );
+                    let full_path = if full_path.is_empty() {
+                        String::new()
+                    } else if full_path.starts_with('/') {
+                        full_path
+                    } else {
+                        format!("/{}", full_path)
+                    };
 
                     requests.push(CollectionItem::Request(Request {
                         id: uuid::Uuid::new_v4().to_string(),
@@ -219,13 +228,14 @@ impl SourceParser for SpringParser {
                 // Check for @RequestMapping
                 for cap in request_mapping_regex.captures_iter(&content) {
                     let url_path = &cap[1];
-                    
+
                     // If this is the same as class_prefix, it might be the class annotation itself
                     // In Spring, @RequestMapping can be on class and method.
                     // Naive check: if it's followed by 'class' or 'record', skip it here
                     let match_start = cap.get(0).unwrap().start();
                     let match_end = cap.get(0).unwrap().end();
-                    let context_after = &content[match_end..std::cmp::min(content.len(), match_end + 50)];
+                    let context_after =
+                        &content[match_end..std::cmp::min(content.len(), match_end + 50)];
                     if context_after.contains("class") || context_after.contains("record") {
                         continue;
                     }
@@ -242,8 +252,18 @@ impl SourceParser for SpringParser {
 
                     let body = find_body(match_end);
 
-                    let full_path = format!("{}/{}", class_prefix.trim_end_matches('/'), url_path.trim_start_matches('/'));
-                    let full_path = if full_path.is_empty() { String::new() } else if full_path.starts_with('/') { full_path } else { format!("/{}", full_path) };
+                    let full_path = format!(
+                        "{}/{}",
+                        class_prefix.trim_end_matches('/'),
+                        url_path.trim_start_matches('/')
+                    );
+                    let full_path = if full_path.is_empty() {
+                        String::new()
+                    } else if full_path.starts_with('/') {
+                        full_path
+                    } else {
+                        format!("/{}", full_path)
+                    };
 
                     requests.push(CollectionItem::Request(Request {
                         id: uuid::Uuid::new_v4().to_string(),

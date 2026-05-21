@@ -302,7 +302,9 @@ impl App {
         if let Some(req) = self.get_current_request_mut() {
             req.body.selected = match req.body.selected {
                 crate::core::collection::BodyType::None => crate::core::collection::BodyType::Raw,
-                crate::core::collection::BodyType::Raw => crate::core::collection::BodyType::FormData,
+                crate::core::collection::BodyType::Raw => {
+                    crate::core::collection::BodyType::FormData
+                }
                 crate::core::collection::BodyType::FormData => {
                     crate::core::collection::BodyType::XWwwFormUrlEncoded
                 }
@@ -334,7 +336,9 @@ impl App {
     pub fn cycle_auth_type(&mut self) {
         if let Some(req) = self.get_current_request_mut() {
             req.auth.selected = match req.auth.selected {
-                crate::core::collection::AuthType::None => crate::core::collection::AuthType::Bearer,
+                crate::core::collection::AuthType::None => {
+                    crate::core::collection::AuthType::Bearer
+                }
                 crate::core::collection::AuthType::Bearer => {
                     crate::core::collection::AuthType::Basic
                 }
@@ -374,7 +378,9 @@ impl App {
                     }
                 }
                 PropertyTab::Auth => match req.auth.selected {
-                    crate::core::collection::AuthType::Bearer => return req.auth.bearer.token.clone(),
+                    crate::core::collection::AuthType::Bearer => {
+                        return req.auth.bearer.token.clone();
+                    }
                     crate::core::collection::AuthType::Basic => {
                         if self.property_editor_row == 0 {
                             return req.auth.basic.username.clone();

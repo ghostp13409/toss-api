@@ -67,7 +67,8 @@ impl RequestEngine {
             BodyType::None => {}
             BodyType::Raw => {
                 if !body_type.raw.content_type.is_empty() {
-                    request = request.header(reqwest::header::CONTENT_TYPE, &body_type.raw.content_type);
+                    request =
+                        request.header(reqwest::header::CONTENT_TYPE, &body_type.raw.content_type);
                 }
                 request = request.body(body_type.raw.content);
             }
