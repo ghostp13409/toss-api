@@ -64,6 +64,7 @@ impl App {
             last_cursor_pos: (0, 0),
             body_editor_state: edtui::EditorState::default(),
             body_editor_handler: edtui::EditorEventHandler::default(),
+            external_editor: None,
         }
     }
 

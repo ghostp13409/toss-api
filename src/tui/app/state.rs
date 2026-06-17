@@ -74,6 +74,7 @@ pub struct App {
     pub last_cursor_pos: (u16, u16),
     pub body_editor_state: EditorState,
     pub body_editor_handler: EditorEventHandler,
+    pub external_editor: Option<String>,
 }
 
 pub struct VisibleItem {
