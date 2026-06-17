@@ -1,6 +1,7 @@
 use super::enums::*;
 use crate::cli::args::Method;
 use crate::core::collection::Collection;
+use edtui::{EditorEventHandler, EditorState};
 use ratatui::widgets::{ListState, TableState};
 
 #[derive(Debug, Clone, Default)]
@@ -71,6 +72,8 @@ pub struct App {
     pub autocomplete_query: String,
     pub autocomplete_index: usize,
     pub last_cursor_pos: (u16, u16),
+    pub body_editor_state: EditorState,
+    pub body_editor_handler: EditorEventHandler,
 }
 
 pub struct VisibleItem {

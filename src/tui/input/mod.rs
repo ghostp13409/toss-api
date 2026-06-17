@@ -2,11 +2,13 @@ use crate::tui::app::{App, FocusedPanel, InputMode, TuiAction};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 pub mod autocomplete;
+pub mod body_editor;
 pub mod editing;
 pub mod normal;
 pub mod popups;
 
 use autocomplete::*;
+use body_editor::*;
 use editing::*;
 use normal::*;
 use popups::*;
@@ -59,5 +61,6 @@ pub fn handle_input(app: &mut App, key: KeyEvent) {
         InputMode::ConfirmDelete => handle_confirm_delete(app, key),
         InputMode::CreateItem => handle_create_item_mode(app, key),
         InputMode::Help => handle_help_mode(app, key),
+        InputMode::BodyEditor => handle_body_editor_input(app, key),
     }
 }

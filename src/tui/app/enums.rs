@@ -11,6 +11,7 @@ pub enum InputMode {
     ConfirmDelete,
     CreateItem,
     Help,
+    BodyEditor,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
