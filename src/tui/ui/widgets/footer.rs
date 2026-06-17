@@ -75,6 +75,21 @@ pub fn render_footer(f: &mut Frame, app: &App, area: Rect) {
                 .fg(Color::White)
                 .add_modifier(Modifier::BOLD),
         ),
+        InputMode::BodyEditor => {
+            let mode = match app.body_editor_state.mode {
+                edtui::EditorMode::Normal => "BODY [NORMAL]",
+                edtui::EditorMode::Insert => "BODY [INSERT]",
+                edtui::EditorMode::Visual => "BODY [VISUAL]",
+                edtui::EditorMode::Search => "BODY [SEARCH]",
+            };
+            (
+                mode,
+                Style::default()
+                    .bg(Color::Rgb(255, 165, 0)) // Orange
+                    .fg(Color::Black)
+                    .add_modifier(Modifier::BOLD),
+            )
+        }
     };
     spans.push(Span::styled(mode_text, mode_style));
     spans.push(Span::raw(" "));
@@ -190,6 +205,24 @@ pub fn render_footer(f: &mut Frame, app: &App, area: Rect) {
                         .add_modifier(Modifier::BOLD),
                 ),
                 Span::raw(": Confirm Change"),
+            ]);
+        }
+        InputMode::BodyEditor => {
+            spans.extend(vec![
+                Span::styled(
+                    "ESC",
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Span::raw(": Save and Exit | "),
+                Span::styled(
+                    "Vim keys",
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Span::raw(": supported"),
             ]);
         }
         InputMode::Normal => {

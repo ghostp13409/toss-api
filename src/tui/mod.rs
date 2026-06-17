@@ -311,22 +311,58 @@ where
 
                     is_paused.store(true, Ordering::SeqCst);
 
-                    let temp_file = format!("/tmp/toss_body_{}.{}", req_id, extension);
+                    let mut temp_file = std::env::temp_dir();
+                    temp_file.push(format!("toss_body_{}.{}", req_id, extension));
+
                     let _ = std::fs::write(&temp_file, current_body);
 
                     let _ = disable_raw_mode();
                     let _ = execute!(std::io::stdout(), LeaveAlternateScreen);
 
-                    let editor = std::env::var("EDITOR").unwrap_or_else(|_| "vi".to_string());
-                    let _ = std::process::Command::new(editor).arg(&temp_file).status();
+                    let editor = app.external_editor.clone().or_else(|| std::env::var("EDITOR").ok());
 
-                    if let Ok(new_body) = std::fs::read_to_string(&temp_file) {
-                        if let Some(col) = app.collections.get_mut(app.active_collection_index) {
-                            if let Some(req_mut) = col.find_request_mut(&req_id) {
-                                req_mut.body.selected = crate::core::collection::BodyType::Raw;
-                                req_mut.body.raw.content = new_body;
-                                if req_mut.body.raw.content_type.is_empty() {
-                                    req_mut.body.raw.content_type = "application/json".to_string();
+                    let editor_to_use = editor.unwrap_or_else(|| {
+                        if cfg!(windows) {
+                            "nvim.exe".to_string()
+                        } else {
+                            "vi".to_string()
+                        }
+                    });
+
+                    // Try to launch the editor
+                    let mut status = std::process::Command::new(&editor_to_use)
+                        .arg(&temp_file)
+                        .status();
+
+                    // If the specified editor fails and we are on Windows, show the "Open With" dialog
+                    if status.is_err() && cfg!(windows) {
+                        println!("\nEditor '{}' not found or failed to start.", editor_to_use);
+                        println!("Opening Windows 'Open With' dialog...");
+                        println!("--------------------------------------------------");
+                        println!("1. Select your editor in the popup.");
+                        println!("2. Edit, SAVE, and CLOSE the editor.");
+                        println!("3. Press ENTER here to finish.");
+                        println!("--------------------------------------------------");
+
+                        let _ = std::process::Command::new("rundll32.exe")
+                            .args(["shell32.dll,OpenAs_RunDLL", &temp_file.to_string_lossy()])
+                            .status();
+
+                        // Wait for manual confirmation since rundll32 returns immediately
+                        let mut input = String::new();
+                        let _ = std::io::stdin().read_line(&mut input);
+                        status = Ok(std::process::ExitStatus::default()); // Mock success
+                    }
+
+                    if status.is_ok() {
+                        if let Ok(new_body) = std::fs::read_to_string(&temp_file) {
+                            if let Some(col) = app.collections.get_mut(app.active_collection_index) {
+                                if let Some(req_mut) = col.find_request_mut(&req_id) {
+                                    req_mut.body.selected = crate::core::collection::BodyType::Raw;
+                                    req_mut.body.raw.content = new_body;
+                                    if req_mut.body.raw.content_type.is_empty() {
+                                        req_mut.body.raw.content_type = "application/json".to_string();
+                                    }
                                 }
                             }
                         }

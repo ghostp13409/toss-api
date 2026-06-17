@@ -1,6 +1,6 @@
 use crate::core::collection::KVParam;
 use crate::tui::app::{
-    App, FocusedPanel, PropertyEditorField, PropertyTab, RequestBarPart, StatsTab,
+    App, FocusedPanel, InputMode, PropertyEditorField, PropertyTab, RequestBarPart, StatsTab,
 };
 use crate::tui::ui::syntax::{apply_env_vars, format_content, highlight_content};
 use crate::tui::ui::utils::{
@@ -631,26 +631,62 @@ pub fn render_details_area(f: &mut Frame, app: &mut App, area: Rect) {
                     f.render_widget(Paragraph::new(" No body ").block(block), area);
                 }
                 crate::core::collection::BodyType::Raw => {
-                    let title = format!(
-                        " Body: Raw [{}] (Press 't' to cycle type, 'c' for format) ",
-                        body.raw.content_type
-                    );
+                    let title = if app.input_mode == InputMode::BodyEditor {
+                        format!(
+                            " Body: Raw [{}] (Press 'Esc' to finish) ",
+                            body.raw.content_type
+                        )
+                    } else {
+                        format!(
+                            " Body: Raw [{}] (Press 'i' for inline edit, 'v' for external) ",
+                            body.raw.content_type
+                        )
+                    };
+
                     let block = create_block(
                         title_with_key("B", title),
-                        app.focused_panel == FocusedPanel::Details,
+                        app.focused_panel == FocusedPanel::Details
+                            || app.input_mode == InputMode::BodyEditor,
                     );
 
-                    let formatted_body =
-                        format_content(&body.raw.content, Some(body.raw.content_type.as_str()));
-                    let mut highlighted_body =
-                        highlight_content(&formatted_body, Some(body.raw.content_type.as_str()));
-                    apply_env_vars(&mut highlighted_body);
+                    if app.input_mode == InputMode::BodyEditor {
+                        let ct = body.raw.content_type.to_lowercase();
+                        let extension = if ct.contains("json") {
+                            "json"
+                        } else if ct.contains("html") {
+                            "html"
+                        } else if ct.contains("xml") {
+                            "xml"
+                        } else {
+                            "txt"
+                        };
 
-                    let p = Paragraph::new(highlighted_body)
-                        .block(block)
-                        .scroll((app.details_scroll as u16, 0))
-                        .wrap(Wrap { trim: false });
-                    f.render_widget(p, area);
+                        let mut editor = edtui::EditorView::new(&mut app.body_editor_state)
+                            .wrap(true)
+                            .line_numbers(edtui::LineNumbers::Absolute);
+
+                        let theme = edtui::EditorTheme::default().block(block);
+
+                        if let Ok(highlighter) =
+                            edtui::SyntaxHighlighter::new("base16-ocean.dark", extension)
+                        {
+                            editor = editor.syntax_highlighter(Some(highlighter));
+                        }
+
+                        f.render_widget(editor.theme(theme), area);
+                    } else {
+                        let formatted_body =
+                            format_content(&body.raw.content, Some(body.raw.content_type.as_str()));
+                        let mut highlighted_body =
+                            highlight_content(&formatted_body, Some(body.raw.content_type.as_str()));
+                        apply_env_vars(&mut highlighted_body);
+
+                        let p = Paragraph::new(highlighted_body)
+                            .block(block)
+                            .scroll((app.details_scroll as u16, 0))
+                            .wrap(Wrap { trim: false });
+                        f.render_widget(p, area);
+                    }
                 }
                 crate::core::collection::BodyType::FormData => {
                     render_kv_editor(

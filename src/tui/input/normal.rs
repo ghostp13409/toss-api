@@ -745,6 +745,25 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                             app.cursor_position = current_val.len();
                         }
                     }
+                    PropertyTab::Body => {
+                        if let Some(req) = app.get_current_request() {
+                            match req.body.selected {
+                                crate::core::collection::BodyType::Raw => {
+                                    let content = req.body.raw.content.clone();
+                                    app.input_mode = InputMode::BodyEditor;
+                                    app.body_editor_state.lines = edtui::Lines::from(content.as_str());
+                                    app.body_editor_state.mode = edtui::EditorMode::Insert;
+                                }
+                                crate::core::collection::BodyType::FormData
+                                | crate::core::collection::BodyType::XWwwFormUrlEncoded => {
+                                    app.input_mode = InputMode::Editing;
+                                    let current_val = app.get_kv_editor_value();
+                                    app.cursor_position = current_val.len();
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
                     _ => {}
                 }
             }
