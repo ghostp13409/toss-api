@@ -311,14 +311,33 @@ where
 
                     is_paused.store(true, Ordering::SeqCst);
 
-                    let temp_file = format!("/tmp/toss_body_{}.{}", req_id, extension);
+                    let mut temp_file = std::env::temp_dir();
+                    temp_file.push(format!("toss_body_{}.{}", req_id, extension));
+
                     let _ = std::fs::write(&temp_file, current_body);
 
                     let _ = disable_raw_mode();
                     let _ = execute!(std::io::stdout(), LeaveAlternateScreen);
 
-                    let editor = std::env::var("EDITOR").unwrap_or_else(|_| "vi".to_string());
-                    let _ = std::process::Command::new(editor).arg(&temp_file).status();
+                    let editor = std::env::var("EDITOR").unwrap_or_else(|_| {
+                        if cfg!(windows) {
+                            "notepad.exe".to_string()
+                        } else {
+                            "vi".to_string()
+                        }
+                    });
+
+                    // Try to launch the editor
+                    let status = std::process::Command::new(&editor)
+                        .arg(&temp_file)
+                        .status();
+
+                    // If the specified editor fails and we are on Windows, fallback to notepad
+                    if status.is_err() && cfg!(windows) && editor != "notepad.exe" {
+                        let _ = std::process::Command::new("notepad.exe")
+                            .arg(&temp_file)
+                            .status();
+                    }
 
                     if let Ok(new_body) = std::fs::read_to_string(&temp_file) {
                         if let Some(col) = app.collections.get_mut(app.active_collection_index) {
