@@ -120,6 +120,7 @@ pub fn execute_post_response_script(
             text: function() {{ return {}; }},
             json: function() {{ return JSON.parse({}); }}
         }};
+        client.response = response;
     "#, 
         crate::core::scripting::console::get_console_shim(),
         crate::core::scripting::context::get_client_shim(&env_json, "[]", "\"\""),

@@ -2,7 +2,6 @@ pub mod context;
 pub mod engine;
 pub mod crypto;
 pub mod console;
-pub mod test_boa;
 
 pub use engine::{execute_pre_request_script, execute_post_response_script, ScriptExecutionResult, TestResult, ConsoleLog};
 
@@ -71,6 +70,41 @@ mod tests {
         assert_eq!(res.console_logs.len(), 1);
         assert_eq!(res.console_logs[0].level, "error");
         assert_eq!(res.console_logs[0].message, "Post-response error log");
+    }
+
+    #[test]
+    fn test_pm_response_json() {
+        let script = r#"
+            pm.test("pm.response.status is 200", function () {
+                pm.expect(pm.response.status).to.equal(200);
+            });
+            pm.test("pm.response.json() works", function () {
+                var jsonData = pm.response.json();
+                pm.expect(jsonData.foo).to.equal("bar");
+            });
+            pm.test("client.response.json() works", function () {
+                var jsonData = client.response.json();
+                pm.expect(jsonData.foo).to.equal("bar");
+            });
+        "#;
+
+        let mut env_vars = Vec::new();
+        let response_headers = vec![];
+        let response_body = r#"{"foo": "bar"}"#;
+
+        let res = execute_post_response_script(
+            script,
+            &mut env_vars,
+            200,
+            "OK",
+            &response_headers,
+            response_body,
+        ).expect("script execution should succeed");
+
+        assert_eq!(res.test_results.len(), 3);
+        for t in &res.test_results {
+            assert_eq!(t.passed, true, "Test failed: {}", t.name);
+        }
     }
 
     #[test]
