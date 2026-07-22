@@ -136,4 +136,31 @@ mod tests {
             assert_eq!(t.passed, true, "Test failed: {}", t.name);
         }
     }
+
+    #[test]
+    fn test_utf8_non_ascii_support() {
+        let script = r#"
+            client.environment.set("city", "München");
+            client.environment.set("cafe", "café");
+            var hash = Crypto.sha256("café");
+            console.log("Welcome to café");
+            pm.test("Crypto sha256 non-ascii", function() {
+                pm.expect(hash).to.equal("850f7dc43910ff890f8879c0ed26fe697c93a067ad93a7d50f466a7028a9bf4e");
+            });
+        "#;
+
+        let mut env_vars = Vec::new();
+        let mut headers = Vec::new();
+        let mut url = "https://httpbin.org/get".to_string();
+
+        let res = execute_pre_request_script(script, &mut env_vars, &mut headers, &mut url)
+            .expect("script execution should succeed");
+
+        assert_eq!(env_vars.iter().find(|v| v.key == "city").map(|v| v.value.as_str()), Some("München"));
+        assert_eq!(env_vars.iter().find(|v| v.key == "cafe").map(|v| v.value.as_str()), Some("café"));
+        assert_eq!(res.console_logs.len(), 1);
+        assert_eq!(res.console_logs[0].message, "Welcome to café");
+        assert_eq!(res.test_results.len(), 1);
+        assert_eq!(res.test_results[0].passed, true, "Test failed: {:?}", res.test_results[0].error);
+    }
 }

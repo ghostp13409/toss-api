@@ -66,7 +66,7 @@ pub fn execute_pre_request_script(
 
     let result = context.eval(Source::from_bytes(extract_script)).map_err(|e| e.to_string())?;
     
-    let result_json = result.to_string(&mut context).map_err(|e| e.to_string())?.to_std_string_escaped();
+    let result_json = result.to_string(&mut context).map_err(|e| e.to_string())?.to_std_string().map_err(|e| e.to_string())?;
     
     #[derive(Deserialize)]
     struct ExtractedState {
@@ -147,7 +147,7 @@ pub fn execute_post_response_script(
 
     let result = context.eval(Source::from_bytes(extract_script)).map_err(|e| e.to_string())?;
     
-    let result_json = result.to_string(&mut context).map_err(|e| e.to_string())?.to_std_string_escaped();
+    let result_json = result.to_string(&mut context).map_err(|e| e.to_string())?.to_std_string().map_err(|e| e.to_string())?;
     
     #[derive(Deserialize)]
     struct ExtractedState {
