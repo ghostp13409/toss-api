@@ -32,6 +32,10 @@ tokio = { version = "1.50.0", features = ["full"] }
 tui-syntax-highlight = "0.2.0"
 uuid = { version = "1.23.0", features = ["serde", "v4"] }
 walkdir = "2.5.0"
+sha2 = "0.11.0"
+md-5 = "0.11.0"
+hmac = "0.13.0"
+base64 = "0.22.1"
 
 [profile.release]
 opt-level = 3
