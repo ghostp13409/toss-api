@@ -417,3 +417,48 @@ pub fn render_autocomplete(f: &mut Frame, app: &App) {
     let list = List::new(items).block(block);
     f.render_widget(list, area);
 }
+
+pub fn render_console_popup(f: &mut Frame, app: &mut App) {
+    let area = centered_rect(80, 80, f.area());
+    f.render_widget(Clear, area);
+
+    let block = Block::default()
+        .title(" Console Log (Press 'S' or ':console' to close) ")
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Green));
+
+    let mut lines = Vec::new();
+
+    if let Some(stats) = &app.response_stats_data {
+        if stats.console_logs.is_empty() {
+            lines.push(Line::raw(" No logs."));
+        } else {
+            for log in &stats.console_logs {
+                let color = match log.level.as_str() {
+                    "error" => Color::Red,
+                    "warn" => Color::Yellow,
+                    "info" => Color::Cyan,
+                    _ => Color::White,
+                };
+                lines.push(Line::from(vec![
+                    Span::styled(format!("[{}] ", log.level.to_uppercase()), Style::default().fg(color).add_modifier(Modifier::BOLD)),
+                    Span::raw(&log.message),
+                ]));
+            }
+        }
+    } else {
+        lines.push(Line::raw(" No request sent yet."));
+    }
+
+    let line_count = lines.len() as u16;
+    let height = area.height.saturating_sub(2);
+    if app.console_scroll > line_count.saturating_sub(height) {
+        app.console_scroll = line_count.saturating_sub(height);
+    }
+
+    let p = Paragraph::new(lines)
+        .block(block)
+        .scroll((app.console_scroll, 0))
+        .wrap(Wrap { trim: false });
+    f.render_widget(p, area);
+}

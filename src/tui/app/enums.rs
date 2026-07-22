@@ -48,6 +48,13 @@ pub enum PropertyTab {
     Scripts,
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Default)]
+pub enum ScriptsSubTab {
+    #[default]
+    PreRequest,
+    PostResponse,
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum PropertyEditorField {
     Key,
@@ -84,6 +91,7 @@ pub enum StatsTab {
     Network,
     Payload,
     Security,
+    Tests,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]

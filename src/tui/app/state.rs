@@ -79,6 +79,11 @@ pub struct App {
     pub body_editor_handler: EditorEventHandler,
     pub external_editor: Option<String>,
     pub help_scroll: u16,
+    pub show_console: bool,
+    pub console_scroll: u16,
+    pub scripts_subtab: ScriptsSubTab,
+    pub pre_request_editor_state: EditorState,
+    pub post_response_editor_state: EditorState,
 }
 
 pub struct VisibleItem {

@@ -66,6 +66,11 @@ impl App {
             body_editor_handler: edtui::EditorEventHandler::default(),
             external_editor: None,
             help_scroll: 0,
+            show_console: false,
+            console_scroll: 0,
+            scripts_subtab: ScriptsSubTab::PreRequest,
+            pre_request_editor_state: edtui::EditorState::default(),
+            post_response_editor_state: edtui::EditorState::default(),
         }
     }
 

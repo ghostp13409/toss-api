@@ -23,6 +23,8 @@ pub fn handle_command_mode(app: &mut App, key: KeyEvent) {
                 }
             } else if cmd == "export" {
                 app.export_active_collection("postman", None);
+            } else if cmd == "console" {
+                app.show_console = true;
             } else {
                 match cmd.as_str() {
                     "q" | "quit" => app.should_quit = true,

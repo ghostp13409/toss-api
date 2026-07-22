@@ -226,7 +226,8 @@ impl App {
             StatsTab::Overview => StatsTab::Network,
             StatsTab::Network => StatsTab::Payload,
             StatsTab::Payload => StatsTab::Security,
-            StatsTab::Security => StatsTab::Overview,
+            StatsTab::Security => StatsTab::Tests,
+            StatsTab::Tests => StatsTab::Overview,
         };
         self.stats_scroll = 0;
     }
@@ -237,6 +238,7 @@ impl App {
             StatsTab::Network => StatsTab::Overview,
             StatsTab::Payload => StatsTab::Network,
             StatsTab::Security => StatsTab::Payload,
+            StatsTab::Tests => StatsTab::Security,
         };
         self.stats_scroll = 0;
     }

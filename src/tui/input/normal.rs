@@ -32,11 +32,14 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                 app.focused_panel = FocusedPanel::Details;
             }
         }
-        KeyCode::Char('S') => {
+        KeyCode::Char('s') => {
             if app.current_request_id.is_some() {
                 app.selected_property_tab = PropertyTab::Scripts;
                 app.focused_panel = FocusedPanel::Details;
             }
+        }
+        KeyCode::Char('S') => {
+            app.show_console = !app.show_console;
         }
         KeyCode::Char('E') => app.focused_panel = FocusedPanel::Response,
         KeyCode::Char('T') => app.focused_panel = FocusedPanel::Stats,
