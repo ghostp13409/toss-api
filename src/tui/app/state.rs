@@ -75,6 +75,7 @@ pub struct App {
     pub body_editor_state: EditorState,
     pub body_editor_handler: EditorEventHandler,
     pub external_editor: Option<String>,
+    pub help_scroll: u16,
 }
 
 pub struct VisibleItem {

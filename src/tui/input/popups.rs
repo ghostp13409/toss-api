@@ -161,7 +161,14 @@ pub fn handle_create_item_mode(app: &mut App, key: KeyEvent) {
 pub fn handle_help_mode(app: &mut App, key: KeyEvent) {
     match key.code {
         KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('?') | KeyCode::Enter => {
-            app.input_mode = InputMode::Normal
+            app.help_scroll = 0;
+            app.input_mode = InputMode::Normal;
+        }
+        KeyCode::Char('j') | KeyCode::Down => {
+            app.help_scroll = app.help_scroll.saturating_add(1);
+        }
+        KeyCode::Char('k') | KeyCode::Up => {
+            app.help_scroll = app.help_scroll.saturating_sub(1);
         }
         _ => {}
     }

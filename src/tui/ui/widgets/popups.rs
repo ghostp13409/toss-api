@@ -143,12 +143,12 @@ pub fn render_rename_popup(f: &mut Frame, app: &App) {
     f.render_widget(p, area);
 }
 
-pub fn render_help_popup(f: &mut Frame, _app: &App) {
-    let area = centered_rect(60, 70, f.area());
+pub fn render_help_popup(f: &mut Frame, app: &App) {
+    let area = centered_rect(80, 85, f.area());
     f.render_widget(Clear, area);
 
     let block = Block::default()
-        .title(" Help / Shortcuts ")
+        .title(" Help / Shortcuts (j/k to scroll) ")
         .borders(Borders::ALL)
         .border_style(
             Style::default()
@@ -189,6 +189,33 @@ pub fn render_help_popup(f: &mut Frame, _app: &App) {
         ]),
         Line::from(vec![Span::raw("")]),
         Line::from(vec![Span::styled(
+            " Command Mode Actions ",
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(Color::Yellow),
+        )]),
+        Line::from(vec![
+            Span::styled("  :export [format] <path> ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Export current collection to Postman or OpenAPI JSON"),
+        ]),
+        Line::from(vec![
+            Span::styled("  :import <path>          ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Import a Postman collection"),
+        ]),
+        Line::from(vec![
+            Span::styled("  :parse <path>           ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Parse project from path (default: . )"),
+        ]),
+        Line::from(vec![
+            Span::styled("  :env create             ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Auto-generate variables (baseUrl)"),
+        ]),
+        Line::from(vec![
+            Span::styled("  :q / :quit              ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Quit application"),
+        ]),
+        Line::from(vec![Span::raw("")]),
+        Line::from(vec![Span::styled(
             " Navigation ",
             Style::default()
                 .add_modifier(Modifier::BOLD)
@@ -196,7 +223,7 @@ pub fn render_help_popup(f: &mut Frame, _app: &App) {
         )]),
         Line::from(vec![
             Span::styled("  j / k     ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Move down / up"),
+            Span::raw(": Move down / up (or scroll help)"),
         ]),
         Line::from(vec![
             Span::styled("  h / l     ", Style::default().fg(Color::Cyan)),
@@ -280,37 +307,11 @@ pub fn render_help_popup(f: &mut Frame, _app: &App) {
             Span::styled("  y / p     ", Style::default().fg(Color::Cyan)),
             Span::raw(": Copy / Paste (Body / Response)"),
         ]),
-        Line::from(vec![Span::raw("")]),
-        Line::from(vec![Span::styled(
-            " Command Mode Actions ",
-            Style::default()
-                .add_modifier(Modifier::BOLD)
-                .fg(Color::Yellow),
-        )]),
-        Line::from(vec![
-            Span::styled("  :import <path> ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Import a Postman collection"),
-        ]),
-        Line::from(vec![
-            Span::styled("  :export [format] <path> ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Export current collection to Postman or OpenAPI JSON"),
-        ]),
-        Line::from(vec![
-            Span::styled("  :parse <path>  ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Parse project from path (default: . )"),
-        ]),
-        Line::from(vec![
-            Span::styled("  :env create    ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Auto-generate variables (baseUrl)"),
-        ]),
-        Line::from(vec![
-            Span::styled("  :q / :quit     ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Quit application"),
-        ]),
     ];
 
     let p = Paragraph::new(help_text)
         .block(block)
+        .scroll((app.help_scroll, 0))
         .wrap(Wrap { trim: false });
     f.render_widget(p, area);
 }

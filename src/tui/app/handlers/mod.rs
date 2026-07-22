@@ -65,6 +65,7 @@ impl App {
             body_editor_state: edtui::EditorState::default(),
             body_editor_handler: edtui::EditorEventHandler::default(),
             external_editor: None,
+            help_scroll: 0,
         }
     }
 
