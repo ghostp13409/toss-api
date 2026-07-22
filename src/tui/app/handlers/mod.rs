@@ -286,4 +286,75 @@ impl App {
             self.update_kv_param(val);
         }
     }
+
+    pub fn export_active_collection(&mut self, format_str: &str, path: Option<&str>) {
+        if self.collections.is_empty() {
+            self.error_message = Some("No active collection to export".to_string());
+            return;
+        }
+
+        let idx = self.selected_collection_index.min(self.collections.len() - 1);
+        let col = &self.collections[idx];
+        let (fmt, file_path) = match format_str.to_lowercase().as_str() {
+            "openapi" | "swagger" => (
+                crate::core::export::ExportFormat::OpenApi,
+                path.unwrap_or("exported_collection.openapi.json"),
+            ),
+            "postman" => (
+                crate::core::export::ExportFormat::Postman,
+                path.unwrap_or("exported_collection.postman.json"),
+            ),
+            _ => (
+                crate::core::export::ExportFormat::Postman,
+                format_str,
+            ),
+        };
+
+        match crate::core::export::export_collection(col, fmt) {
+            Ok(content) => {
+                if let Err(e) = std::fs::write(file_path, content) {
+                    self.error_message = Some(format!("Failed to write export file: {}", e));
+                } else {
+                    self.notify(format!("Exported '{}' to {}", col.name, file_path));
+                }
+            }
+            Err(e) => {
+                self.error_message = Some(format!("Export failed: {}", e));
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::collection::Collection;
+
+    #[test]
+    fn test_export_active_collection_empty() {
+        let mut app = App::new();
+        app.export_active_collection("postman", None);
+        assert_eq!(
+            app.error_message,
+            Some("No active collection to export".to_string())
+        );
+    }
+
+    #[test]
+    fn test_export_active_collection_success() {
+        let mut app = App::new();
+        app.collections.push(Collection::new("Test App Collection".to_string()));
+        let temp_dir = std::env::temp_dir();
+        let file_path = temp_dir.join("test_export_out.json");
+        let path_str = file_path.to_str().unwrap();
+
+        app.export_active_collection("openapi", Some(path_str));
+
+        assert!(file_path.exists());
+        assert!(app.notification.is_some());
+        let (msg, _) = app.notification.unwrap();
+        assert!(msg.contains("Exported 'Test App Collection'"));
+
+        let _ = std::fs::remove_file(file_path);
+    }
 }

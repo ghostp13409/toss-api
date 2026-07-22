@@ -292,6 +292,10 @@ pub fn render_help_popup(f: &mut Frame, _app: &App) {
             Span::raw(": Import a Postman collection"),
         ]),
         Line::from(vec![
+            Span::styled("  :export [format] <path> ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Export current collection to Postman or OpenAPI JSON"),
+        ]),
+        Line::from(vec![
             Span::styled("  :parse <path>  ", Style::default().fg(Color::Cyan)),
             Span::raw(": Parse project from path (default: . )"),
         ]),
