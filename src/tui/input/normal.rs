@@ -312,6 +312,8 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                                     app.url = req.url.clone();
                                     req.auth.auto_select();
                                     req.body.auto_select();
+                                    app.pre_request_editor_state.lines = edtui::Lines::from(req.pre_request_script.as_deref().unwrap_or(""));
+                                    app.post_response_editor_state.lines = edtui::Lines::from(req.post_response_script.as_deref().unwrap_or(""));
                                     break;
                                 }
                             }
@@ -340,6 +342,8 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                                     app.url = req.url.clone();
                                     req.auth.auto_select();
                                     req.body.auto_select();
+                                    app.pre_request_editor_state.lines = edtui::Lines::from(req.pre_request_script.as_deref().unwrap_or(""));
+                                    app.post_response_editor_state.lines = edtui::Lines::from(req.post_response_script.as_deref().unwrap_or(""));
                                 }
                             }
                             app.focus_request_bar();
@@ -616,6 +620,7 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                 match app.selected_property_tab {
                     PropertyTab::Auth => app.cycle_auth_type(),
                     PropertyTab::Body => app.cycle_body_type(),
+                    PropertyTab::Scripts => app.cycle_scripts_subtab(),
                     _ => {}
                 }
             } else if app.focused_panel == FocusedPanel::Stats {
@@ -767,7 +772,24 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                             }
                         }
                     }
-                    _ => {}
+                    PropertyTab::Scripts => {
+                        let (pre_req, post_res) = if let Some(req) = app.get_current_request() {
+                            (req.pre_request_script.clone(), req.post_response_script.clone())
+                        } else {
+                            (None, None)
+                        };
+                        app.input_mode = InputMode::BodyEditor;
+                        match app.scripts_subtab {
+                            crate::tui::app::ScriptsSubTab::PreRequest => {
+                                app.pre_request_editor_state.lines = edtui::Lines::from(pre_req.as_deref().unwrap_or(""));
+                                app.pre_request_editor_state.mode = edtui::EditorMode::Insert;
+                            }
+                            crate::tui::app::ScriptsSubTab::PostResponse => {
+                                app.post_response_editor_state.lines = edtui::Lines::from(post_res.as_deref().unwrap_or(""));
+                                app.post_response_editor_state.mode = edtui::EditorMode::Insert;
+                            }
+                        }
+                    }
                 }
             }
         }

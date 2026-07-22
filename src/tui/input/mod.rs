@@ -26,6 +26,10 @@ pub fn handle_input(app: &mut App, key: KeyEvent) {
         handle_method_search_input(app, key);
         return;
     }
+    if app.show_console {
+        handle_console_mode(app, key);
+        return;
+    }
 
     // Global keys
     if key.modifiers.contains(KeyModifiers::CONTROL)

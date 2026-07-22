@@ -24,7 +24,7 @@ pub fn handle_command_mode(app: &mut App, key: KeyEvent) {
             } else if cmd == "export" {
                 app.export_active_collection("postman", None);
             } else if cmd == "console" {
-                app.show_console = true;
+                app.show_console = !app.show_console;
             } else {
                 match cmd.as_str() {
                     "q" | "quit" => app.should_quit = true,
@@ -176,6 +176,21 @@ pub fn handle_help_mode(app: &mut App, key: KeyEvent) {
     }
 }
 
+pub fn handle_console_mode(app: &mut App, key: KeyEvent) {
+    match key.code {
+        KeyCode::Esc | KeyCode::Char('q') => {
+            app.show_console = false;
+        }
+        KeyCode::Char('j') | KeyCode::Down => {
+            app.console_scroll = app.console_scroll.saturating_add(1);
+        }
+        KeyCode::Char('k') | KeyCode::Up => {
+            app.console_scroll = app.console_scroll.saturating_sub(1);
+        }
+        _ => {}
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -199,5 +214,27 @@ mod tests {
         assert!(file_path.exists());
         assert_eq!(app.input_mode, InputMode::Normal);
         let _ = std::fs::remove_file(file_path);
+    }
+
+    #[test]
+    fn test_show_console_toggle() {
+        let mut app = App::new();
+        app.show_console = false;
+
+        // Toggle on
+        app.command_input = "console".to_string();
+        handle_command_mode(
+            &mut app,
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+        );
+        assert!(app.show_console);
+
+        // Toggle off
+        app.command_input = "console".to_string();
+        handle_command_mode(
+            &mut app,
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+        );
+        assert!(!app.show_console);
     }
 }
