@@ -34,16 +34,25 @@ pub async fn run_cli(command: Commands) -> Result<(), Box<dyn std::error::Error>
             };
 
             let json_output = export_collection(col, fmt)?;
-            let out_path = output.unwrap_or_else(|| {
-                let ext = match fmt {
-                    ExportFormat::Postman => "postman_collection.json",
-                    ExportFormat::OpenApi => "openapi.json",
-                };
-                format!("{}.{}", col.name.to_lowercase().replace(' ', "_"), ext)
-            });
+            let default_filename = match fmt {
+                ExportFormat::Postman => format!("{}.postman_collection.json", col.name.to_lowercase().replace(' ', "_")),
+                ExportFormat::OpenApi => format!("{}.openapi.json", col.name.to_lowercase().replace(' ', "_")),
+            };
+
+            let out_path = match output {
+                Some(p) => {
+                    let path_buf = std::path::PathBuf::from(p);
+                    if path_buf.is_dir() {
+                        path_buf.join(default_filename)
+                    } else {
+                        path_buf
+                    }
+                }
+                None => std::path::PathBuf::from(default_filename),
+            };
 
             std::fs::write(&out_path, json_output)?;
-            println!("Exported collection '{}' to {}", col.name, out_path);
+            println!("Exported collection '{}' to {}", col.name, out_path.display());
         }
         Commands::Send {
             method,
