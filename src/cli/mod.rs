@@ -71,6 +71,7 @@ pub async fn run_cli(command: Commands) -> Result<(), Box<dyn std::error::Error>
                 Environment::default()
             };
 
+            let mut empty_env = Vec::new();
             send_request(
                 method,
                 &url,
@@ -81,6 +82,9 @@ pub async fn run_cli(command: Commands) -> Result<(), Box<dyn std::error::Error>
                 json_flag,
                 headers_only,
                 offline,
+                None,
+                None,
+                &mut empty_env,
             )
             .await?;
         }
@@ -189,6 +193,8 @@ pub async fn run_cli(command: Commands) -> Result<(), Box<dyn std::error::Error>
                 _ => None,
             };
 
+            let mut env_vars = col.env_vars.clone();
+
             send_request(
                 req.method,
                 &req.url,
@@ -199,8 +205,18 @@ pub async fn run_cli(command: Commands) -> Result<(), Box<dyn std::error::Error>
                 json_flag,
                 false,
                 false,
+                req.pre_request_script.clone(),
+                req.post_response_script.clone(),
+                &mut env_vars,
             )
             .await?;
+
+            // Update collection with new env vars if they were changed
+            let mut all_cols = collections;
+            if let Some(pos) = all_cols.iter().position(|c| c.name == collection) {
+                all_cols[pos].env_vars = env_vars;
+                persistence.save_collections(&all_cols)?;
+            }
         }
         Commands::Env { command } => match command {
             EnvCommands::List => {
@@ -256,6 +272,9 @@ async fn send_request(
     json_flag: bool,
     headers_only: bool,
     offline: bool,
+    pre_script: Option<String>,
+    post_script: Option<String>,
+    env_vars: &mut Vec<crate::core::collection::KVParam>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let final_url = environment.replace_vars(url);
     let final_body = body.map(|b| environment.replace_vars(&b));
@@ -288,18 +307,21 @@ async fn send_request(
     };
 
     let engine = RequestEngine::new();
-    let response = engine
-        .send(
+    let result = engine
+        .send_with_pipeline(
             method.into(),
             &final_url,
             final_headers,
             Vec::new(),
             body_type,
             crate::core::collection::Auth::default(),
+            pre_script.as_deref(),
+            post_script.as_deref(),
+            env_vars,
         )
         .await?;
 
-    let status = response.status();
+    let status = result.status;
     let status_color = if status.is_success() {
         Color::Green
     } else if status.is_client_error() || status.is_server_error() {
@@ -317,15 +339,15 @@ async fn send_request(
     }
 
     if headers_only {
-        println!("{:#?}", response.headers());
+        println!("{:#?}", result.headers);
         return Ok(());
     }
 
     if !silent {
-        println!("{}: {:#?}", "Headers".bold(), response.headers());
+        println!("{}: {:#?}", "Headers".bold(), result.headers);
     }
 
-    let body_text = response.text().await?;
+    let body_text = String::from_utf8_lossy(&result.body).into_owned();
 
     if json_flag {
         println!("{}", body_text);
@@ -333,6 +355,24 @@ async fn send_request(
         println!("{}:\n{}", "Body".bold(), body_text);
     } else {
         print!("{}", body_text);
+    }
+
+    if let Some(post_res) = result.post_script_result {
+        if !silent {
+            if !post_res.test_results.is_empty() {
+                println!("\n{}", "Test Results:".bold().yellow());
+                for tr in post_res.test_results {
+                    let icon = if tr.passed { "✅" } else { "❌" };
+                    println!("  {} {}", icon, tr.name);
+                }
+            }
+            if !post_res.console_logs.is_empty() {
+                println!("\n{}", "Console Logs:".bold().yellow());
+                for log in post_res.console_logs {
+                    println!("  [{}] {}", log.level.to_uppercase(), log.message);
+                }
+            }
+        }
     }
 
     Ok(())

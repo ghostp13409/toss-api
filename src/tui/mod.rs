@@ -29,6 +29,7 @@ enum AppEvent {
         Option<String>,
         Option<ResponseStats>,
         Option<String>,
+        Option<crate::core::scripting::ScriptExecutionResult>,
     ),
 }
 
@@ -133,10 +134,17 @@ where
                         }
                     }
                 }
-                AppEvent::HttpResponse(body, status, stats, content_type) => {
+                AppEvent::HttpResponse(body, status, mut stats, content_type, _script_res) => {
                     app.response_body = body;
                     app.response_content_type = content_type;
                     app.response_status = status;
+                    if let Some(ref s) = stats {
+                        if let Some(env_vars) = &s.updated_env_vars {
+                            if let Some(col) = app.collections.get_mut(app.active_collection_index) {
+                                col.env_vars = env_vars.clone();
+                            }
+                        }
+                    }
                     app.response_stats_data = stats;
                     app.response_scroll = 0;
                     app.response_cursor_row = 0;
@@ -206,6 +214,10 @@ where
                         let tx_res = tx.clone();
                         let final_url = url.clone();
                         let final_method = format!("{:?}", method);
+                        
+                        let pre_script = req.pre_request_script.clone();
+                        let post_script = req.post_response_script.clone();
+                        let mut env_vars = app.get_active_collection_env_vars();
 
                         tokio::spawn(async move {
                             let client = reqwest::Client::builder()
@@ -217,18 +229,28 @@ where
                             let engine = RequestEngine::with_client(client);
 
                             match engine
-                                .send(method, &url, headers, Vec::new(), body_type, auth)
+                                .send_with_pipeline(
+                                    method, 
+                                    &url, 
+                                    headers, 
+                                    Vec::new(), 
+                                    body_type, 
+                                    auth,
+                                    pre_script.as_deref(),
+                                    post_script.as_deref(),
+                                    &mut env_vars
+                                )
                                 .await
                             {
-                                Ok(res) => {
+                                Ok(result) => {
                                     let ttfb = start.elapsed();
-                                    let status = Some(res.status().to_string());
-                                    let version = format!("{:?}", res.version());
-                                    let remote_addr = res.remote_addr().map(|a| a.to_string());
+                                    let status = Some(result.status.to_string());
+                                    let version = format!("{:?}", result.version);
+                                    let remote_addr = result.remote_addr.map(|a| a.to_string());
 
                                     let mut header_size = 0;
                                     let mut headers_map = HashMap::new();
-                                    for (k, v) in res.headers() {
+                                    for (k, v) in &result.headers {
                                         let key_str = k.as_str().to_string();
                                         let val_str = v.to_str().unwrap_or("").to_string();
                                         header_size += key_str.len() + val_str.len() + 4;
@@ -237,14 +259,11 @@ where
 
                                     let content_type = headers_map.get("content-type").cloned();
 
-                                    let body_start = Instant::now();
-                                    let body_bytes = res.bytes().await.unwrap_or_default();
-                                    let download_time = body_start.elapsed();
+                                    let download_time = start.elapsed() - ttfb;
                                     let total_time = start.elapsed();
 
-                                    let body_size = body_bytes.len();
-                                    let body_text =
-                                        String::from_utf8_lossy(&body_bytes).into_owned();
+                                    let body_size = result.body.len();
+                                    let body_text = String::from_utf8_lossy(&result.body).into_owned();
 
                                     let stats = ResponseStats {
                                         total_time,
@@ -260,6 +279,9 @@ where
                                         url: final_url,
                                         method: final_method,
                                         remote_addr,
+                                        test_results: result.post_script_result.as_ref().map(|r| r.test_results.clone()).unwrap_or_default(),
+                                        console_logs: result.post_script_result.as_ref().map(|r| r.console_logs.clone()).unwrap_or_default(),
+                                        updated_env_vars: Some(env_vars),
                                     };
 
                                     let _ = tx_res
@@ -268,6 +290,7 @@ where
                                             status,
                                             Some(stats),
                                             content_type,
+                                            result.post_script_result,
                                         ))
                                         .await;
                                 }
@@ -276,6 +299,7 @@ where
                                         .send(AppEvent::HttpResponse(
                                             format!("Error: {}", e),
                                             Some("ERROR".to_string()),
+                                            None,
                                             None,
                                             None,
                                         ))

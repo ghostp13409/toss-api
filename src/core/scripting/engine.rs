@@ -2,19 +2,20 @@ use boa_engine::{Context, Source};
 use crate::core::collection::KVParam;
 use serde::{Deserialize, Serialize};
 
+#[derive(Clone)]
 pub struct ScriptExecutionResult {
     pub console_logs: Vec<ConsoleLog>,
     pub test_results: Vec<TestResult>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct TestResult {
     pub name: String,
     pub passed: bool,
     pub error: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct ConsoleLog {
     pub level: String,
     pub message: String,

@@ -19,6 +19,9 @@ pub struct ResponseStats {
     pub url: String,
     pub method: String,
     pub remote_addr: Option<String>,
+    pub test_results: Vec<crate::core::scripting::TestResult>,
+    pub console_logs: Vec<crate::core::scripting::ConsoleLog>,
+    pub updated_env_vars: Option<Vec<crate::core::collection::KVParam>>,
 }
 
 pub struct App {

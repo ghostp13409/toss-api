@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "rust-analyzer": {
+      "command": "/home/ghostp134/.cargo/bin/rust-analyzer-mcp",
+      "args": [],
+      "env": {
+        "RUST_LOG": "info"
+      }
+    }
+  }
+}
