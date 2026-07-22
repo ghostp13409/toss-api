@@ -1,6 +1,7 @@
 pub mod args;
 
 use crate::core::env::Environment;
+use crate::core::export::{export_collection, ExportFormat};
 use crate::core::import::import_collection;
 use crate::core::parser::parse_project;
 use crate::core::persistence::PersistenceManager;
@@ -13,6 +14,37 @@ pub async fn run_cli(command: Commands) -> Result<(), Box<dyn std::error::Error>
     let persistence = PersistenceManager::new();
 
     match command {
+        Commands::Export { name, format, output } => {
+            let fmt = match format.to_lowercase().as_str() {
+                "openapi" | "swagger" => ExportFormat::OpenApi,
+                _ => ExportFormat::Postman,
+            };
+
+            let collections = persistence.load_collections()?;
+            let col = match collections.iter().find(|c| c.name.eq_ignore_ascii_case(&name)) {
+                Some(c) => c,
+                None => {
+                    eprintln!("Collection '{}' not found.", name);
+                    eprintln!("Available collections:");
+                    for c in &collections {
+                        eprintln!("  - {}", c.name);
+                    }
+                    std::process::exit(1);
+                }
+            };
+
+            let json_output = export_collection(col, fmt)?;
+            let out_path = output.unwrap_or_else(|| {
+                let ext = match fmt {
+                    ExportFormat::Postman => "postman_collection.json",
+                    ExportFormat::OpenApi => "openapi.json",
+                };
+                format!("{}.{}", col.name.to_lowercase().replace(' ', "_"), ext)
+            });
+
+            std::fs::write(&out_path, json_output)?;
+            println!("Exported collection '{}' to {}", col.name, out_path);
+        }
         Commands::Send {
             method,
             url,
