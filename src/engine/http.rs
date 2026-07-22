@@ -1,5 +1,5 @@
 use crate::core::collection::{Auth, AuthType, BodyType, RequestBody, KVParam};
-use crate::core::scripting::{execute_pre_request_script, execute_post_response_script, ScriptExecutionResult};
+use crate::core::scripting::{execute_pre_request_script, execute_post_response_script, ScriptExecutionResult, ConsoleLog};
 use reqwest::{Client, Method, Response};
 use std::collections::HashMap;
 
@@ -127,7 +127,16 @@ impl RequestEngine {
 
         let pre_res = if let Some(script) = pre_request_script {
             if !script.trim().is_empty() {
-                execute_pre_request_script(script, env_vars, &mut kv_headers, &mut final_url).ok()
+                match execute_pre_request_script(script, env_vars, &mut kv_headers, &mut final_url) {
+                    Ok(res) => Some(res),
+                    Err(e) => Some(ScriptExecutionResult {
+                        console_logs: vec![ConsoleLog {
+                            level: "error".to_string(),
+                            message: format!("Script Error: {}", e),
+                        }],
+                        test_results: vec![],
+                    }),
+                }
             } else {
                 None
             }
@@ -174,7 +183,16 @@ impl RequestEngine {
 
         let post_res = if let Some(script) = post_response_script {
             if !script.trim().is_empty() {
-                execute_post_response_script(script, env_vars, status_code, status_text, &response_kv_headers, &body_text).ok()
+                match execute_post_response_script(script, env_vars, status_code, status_text, &response_kv_headers, &body_text) {
+                    Ok(res) => Some(res),
+                    Err(e) => Some(ScriptExecutionResult {
+                        console_logs: vec![ConsoleLog {
+                            level: "error".to_string(),
+                            message: format!("Script Error: {}", e),
+                        }],
+                        test_results: vec![],
+                    }),
+                }
             } else {
                 None
             }
@@ -209,8 +227,6 @@ mod tests {
         let pre_script = "client.environment.set('foo', 'baz'); client.request.headers.add('X-Custom', '123');";
         let post_script = "pm.test('Status is 200', function() { pm.expect(response.status).to.equal(200); });";
         
-        // This method doesn't exist yet, so the test will fail to compile.
-        // We'll implement it next.
         let res = engine.send_with_pipeline(
             reqwest::Method::GET,
             "https://httpbin.org/get",
@@ -229,5 +245,36 @@ mod tests {
         let post_res = res.post_script_result.unwrap();
         assert_eq!(post_res.test_results.len(), 1);
         assert!(post_res.test_results[0].passed);
+    }
+
+    #[tokio::test]
+    async fn test_pipeline_script_error_capturing() {
+        let engine = RequestEngine::new();
+        let mut env_vars = Vec::new();
+
+        let invalid_pre_script = "syntax error !!!";
+        let invalid_post_script = "throw new Error('post script failed');";
+
+        let res = engine.send_with_pipeline(
+            reqwest::Method::GET,
+            "https://httpbin.org/get",
+            HashMap::new(),
+            vec![],
+            RequestBody::default(),
+            Auth::default(),
+            Some(invalid_pre_script),
+            Some(invalid_post_script),
+            &mut env_vars,
+        ).await.expect("Failed to send request");
+
+        let pre_res = res.pre_script_result.unwrap();
+        assert_eq!(pre_res.console_logs.len(), 1);
+        assert_eq!(pre_res.console_logs[0].level, "error");
+        assert!(pre_res.console_logs[0].message.starts_with("Script Error:"));
+
+        let post_res = res.post_script_result.unwrap();
+        assert_eq!(post_res.console_logs.len(), 1);
+        assert_eq!(post_res.console_logs[0].level, "error");
+        assert!(post_res.console_logs[0].message.starts_with("Script Error:"));
     }
 }

@@ -357,20 +357,30 @@ async fn send_request(
         print!("{}", body_text);
     }
 
-    if let Some(post_res) = result.post_script_result {
-        if !silent {
-            if !post_res.test_results.is_empty() {
-                println!("\n{}", "Test Results:".bold().yellow());
-                for tr in post_res.test_results {
-                    let icon = if tr.passed { "✅" } else { "❌" };
-                    println!("  {} {}", icon, tr.name);
-                }
+    if !silent {
+        let mut test_results = Vec::new();
+        let mut console_logs = Vec::new();
+
+        if let Some(pre_res) = result.pre_script_result {
+            test_results.extend(pre_res.test_results);
+            console_logs.extend(pre_res.console_logs);
+        }
+        if let Some(post_res) = result.post_script_result {
+            test_results.extend(post_res.test_results);
+            console_logs.extend(post_res.console_logs);
+        }
+
+        if !test_results.is_empty() {
+            println!("\n{}", "Test Results:".bold().yellow());
+            for tr in test_results {
+                let icon = if tr.passed { "✅" } else { "❌" };
+                println!("  {} {}", icon, tr.name);
             }
-            if !post_res.console_logs.is_empty() {
-                println!("\n{}", "Console Logs:".bold().yellow());
-                for log in post_res.console_logs {
-                    println!("  [{}] {}", log.level.to_uppercase(), log.message);
-                }
+        }
+        if !console_logs.is_empty() {
+            println!("\n{}", "Console Logs:".bold().yellow());
+            for log in console_logs {
+                println!("  [{}] {}", log.level.to_uppercase(), log.message);
             }
         }
     }

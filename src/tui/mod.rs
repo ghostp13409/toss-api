@@ -265,6 +265,17 @@ where
                                     let body_size = result.body.len();
                                     let body_text = String::from_utf8_lossy(&result.body).into_owned();
 
+                                    let mut console_logs = Vec::new();
+                                    let mut test_results = Vec::new();
+                                    if let Some(pre) = &result.pre_script_result {
+                                        console_logs.extend(pre.console_logs.clone());
+                                        test_results.extend(pre.test_results.clone());
+                                    }
+                                    if let Some(post) = &result.post_script_result {
+                                        console_logs.extend(post.console_logs.clone());
+                                        test_results.extend(post.test_results.clone());
+                                    }
+
                                     let stats = ResponseStats {
                                         total_time,
                                         dns_time: Duration::from_millis(0),
@@ -279,8 +290,8 @@ where
                                         url: final_url,
                                         method: final_method,
                                         remote_addr,
-                                        test_results: result.post_script_result.as_ref().map(|r| r.test_results.clone()).unwrap_or_default(),
-                                        console_logs: result.post_script_result.as_ref().map(|r| r.console_logs.clone()).unwrap_or_default(),
+                                        test_results,
+                                        console_logs,
                                         updated_env_vars: Some(env_vars),
                                     };
 
