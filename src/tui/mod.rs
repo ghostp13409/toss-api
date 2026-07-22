@@ -25,6 +25,7 @@ enum AppEvent {
     Input(KeyEvent),
     Tick,
     HttpResponse(
+        usize,
         String,
         Option<String>,
         Option<ResponseStats>,
@@ -134,14 +135,14 @@ where
                         }
                     }
                 }
-                AppEvent::HttpResponse(body, status, mut stats, content_type, _script_res) => {
+                AppEvent::HttpResponse(col_idx, body, status, stats, content_type, _script_res) => {
                     app.response_body = body;
                     app.response_content_type = content_type;
                     app.response_status = status;
                     if let Some(ref s) = stats {
                         if let Some(env_vars) = &s.updated_env_vars {
-                            if let Some(col) = app.collections.get_mut(app.active_collection_index) {
-                                col.env_vars = env_vars.clone();
+                            if col_idx < app.collections.len() {
+                                app.collections[col_idx].env_vars = env_vars.clone();
                             }
                         }
                     }
@@ -218,6 +219,7 @@ where
                         let pre_script = req.pre_request_script.clone();
                         let post_script = req.post_response_script.clone();
                         let mut env_vars = app.get_active_collection_env_vars();
+                        let collection_index = app.active_collection_index;
 
                         tokio::spawn(async move {
                             let client = reqwest::Client::builder()
@@ -297,6 +299,7 @@ where
 
                                     let _ = tx_res
                                         .send(AppEvent::HttpResponse(
+                                            collection_index,
                                             body_text,
                                             status,
                                             Some(stats),
@@ -308,6 +311,7 @@ where
                                 Err(e) => {
                                     let _ = tx_res
                                         .send(AppEvent::HttpResponse(
+                                            collection_index,
                                             format!("Error: {}", e),
                                             Some("ERROR".to_string()),
                                             None,
