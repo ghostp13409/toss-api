@@ -178,7 +178,7 @@ pub fn handle_help_mode(app: &mut App, key: KeyEvent) {
 
 pub fn handle_console_mode(app: &mut App, key: KeyEvent) {
     match key.code {
-        KeyCode::Esc | KeyCode::Char('q') => {
+        KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('L') | KeyCode::Char('l') => {
             app.show_console = false;
         }
         KeyCode::Char('j') | KeyCode::Down => {

@@ -188,7 +188,7 @@ pub fn render_help_popup(f: &mut Frame, app: &App) {
             Span::raw(": Send request"),
         ]),
         Line::from(vec![
-            Span::styled("  Shift + S     ", Style::default().fg(Color::Cyan)),
+            Span::styled("  Shift + L     ", Style::default().fg(Color::Cyan)),
             Span::raw(": Toggle Console Debugger overlay"),
         ]),
         Line::from(vec![Span::raw("")]),
@@ -269,8 +269,8 @@ pub fn render_help_popup(f: &mut Frame, app: &App) {
             Span::raw(": Params / Headers / Auth"),
         ]),
         Line::from(vec![
-            Span::styled("  B / s / T ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Body / Scripts (lowercase s) / Stats"),
+            Span::styled("  B / S / T ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Body / Scripts / Stats"),
         ]),
         Line::from(vec![
             Span::styled("  V / A     ", Style::default().fg(Color::Cyan)),
@@ -431,7 +431,7 @@ pub fn render_console_popup(f: &mut Frame, app: &mut App) {
     f.render_widget(Clear, area);
 
     let block = Block::default()
-        .title(" Console Log (Press 'S' or ':console' to close) ")
+        .title(" Console Log (Press 'L' or ':console' to close) ")
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Green));
 

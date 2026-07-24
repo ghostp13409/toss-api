@@ -32,13 +32,13 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                 app.focused_panel = FocusedPanel::Details;
             }
         }
-        KeyCode::Char('s') => {
+        KeyCode::Char('S') => {
             if app.current_request_id.is_some() {
                 app.selected_property_tab = PropertyTab::Scripts;
                 app.focused_panel = FocusedPanel::Details;
             }
         }
-        KeyCode::Char('S') => {
+        KeyCode::Char('L') => {
             app.show_console = !app.show_console;
         }
         KeyCode::Char('E') => app.focused_panel = FocusedPanel::Response,
@@ -795,5 +795,34 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
         }
 
         _ => {}
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+
+    #[test]
+    fn test_normal_mode_scripts_and_console_shortcuts() {
+        let mut app = App::new();
+        app.current_request_id = Some("test-id".to_string());
+
+        // Press 'S' -> switch to Scripts tab & Details panel
+        handle_normal_mode(&mut app, KeyEvent::new(KeyCode::Char('S'), KeyModifiers::SHIFT));
+        assert_eq!(app.selected_property_tab, PropertyTab::Scripts);
+        assert_eq!(app.focused_panel, FocusedPanel::Details);
+
+        // Press 's' -> should not switch tab
+        app.selected_property_tab = PropertyTab::Params;
+        handle_normal_mode(&mut app, KeyEvent::new(KeyCode::Char('s'), KeyModifiers::NONE));
+        assert_eq!(app.selected_property_tab, PropertyTab::Params);
+
+        // Press 'L' -> toggle show_console
+        assert!(!app.show_console);
+        handle_normal_mode(&mut app, KeyEvent::new(KeyCode::Char('L'), KeyModifiers::SHIFT));
+        assert!(app.show_console);
+        handle_normal_mode(&mut app, KeyEvent::new(KeyCode::Char('L'), KeyModifiers::SHIFT));
+        assert!(!app.show_console);
     }
 }
