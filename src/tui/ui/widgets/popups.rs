@@ -187,6 +187,10 @@ pub fn render_help_popup(f: &mut Frame, app: &App) {
             Span::styled("  Ctrl + s/Enter", Style::default().fg(Color::Cyan)),
             Span::raw(": Send request"),
         ]),
+        Line::from(vec![
+            Span::styled("  Shift + S     ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Toggle Console Debugger overlay"),
+        ]),
         Line::from(vec![Span::raw("")]),
         Line::from(vec![Span::styled(
             " Command Mode Actions ",
@@ -209,6 +213,10 @@ pub fn render_help_popup(f: &mut Frame, app: &App) {
         Line::from(vec![
             Span::styled("  :env create             ", Style::default().fg(Color::Cyan)),
             Span::raw(": Auto-generate variables (baseUrl)"),
+        ]),
+        Line::from(vec![
+            Span::styled("  :console                ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Toggle Console Debugger overlay"),
         ]),
         Line::from(vec![
             Span::styled("  :q / :quit              ", Style::default().fg(Color::Cyan)),
@@ -261,8 +269,8 @@ pub fn render_help_popup(f: &mut Frame, app: &App) {
             Span::raw(": Params / Headers / Auth"),
         ]),
         Line::from(vec![
-            Span::styled("  B / S / T ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Body / Scripts / Stats"),
+            Span::styled("  B / s / T ", Style::default().fg(Color::Cyan)),
+            Span::raw(": Body / Scripts (lowercase s) / Stats"),
         ]),
         Line::from(vec![
             Span::styled("  V / A     ", Style::default().fg(Color::Cyan)),
@@ -297,7 +305,7 @@ pub fn render_help_popup(f: &mut Frame, app: &App) {
         ]),
         Line::from(vec![
             Span::styled("  t         ", Style::default().fg(Color::Cyan)),
-            Span::raw(": Cycle Auth / Body type (in Details)"),
+            Span::raw(": Cycle Auth/Body type (or Pre/Post Script subtab)"),
         ]),
         Line::from(vec![
             Span::styled("  c         ", Style::default().fg(Color::Cyan)),
