@@ -80,7 +80,7 @@ Run `toss-api --help` for the full command list.
 ## 🗺️ Roadmap
 
 - [ ] GraphQL Support (with Schema auto-fetching)
-- [ ] Scripting (Pre-request & Post-response JavaScript)
+- [x] Scripting (Pre-request & Post-response JavaScript) ([Scripting Guide](./docs/scripting-guide.md))
 - [ ] Mass API Testing & Results Visualization
 - [ ] More Auth Methods (OAuth2, Digest)
 - [x] Export to Postman/Swagger (OpenAPI)

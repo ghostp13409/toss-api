@@ -21,7 +21,39 @@
               "raw": "{\n  \"id\": 12345,\n  \"category\": {\n    \"id\": 1,\n    \"name\": \"Dogs\"\n  },\n  \"name\": \"Rex\",\n  \"photoUrls\": [\n    \"https://example.com/rex.jpg\"\n  ],\n  \"tags\": [\n    { \"id\": 1, \"name\": \"friendly\" },\n    { \"id\": 2, \"name\": \"trained\" }\n  ],\n  \"status\": \"available\"\n}"
             },
             "url": "https://petstore.swagger.io/v2/pet"
-          }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(\"Generating dynamic pet timestamp ID\");",
+                  "let petId = timestamp();",
+                  "client.environment.set(\"pet_id\", String(petId));",
+                  "let sig = Crypto.hmacSha256(\"petstore_key\", String(petId));",
+                  "client.request.headers[\"X-Pet-Signature\"] = sig;"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(\"Validating pet creation response\");",
+                  "client.test(\"Status code is 200\", function() {",
+                  "  client.expect(response.status).to.be(200);",
+                  "});",
+                  "client.test(\"Pet object returns correct name\", function() {",
+                  "  let data = response.json();",
+                  "  client.expect(data).to.have.property(\"name\");",
+                  "  client.expect(data.name).to.be(\"Rex\");",
+                  "});"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Update Pet (Form Data)",
@@ -132,7 +164,37 @@
                 { "key": "password", "value": "secure123" }
               ]
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(\"Preparing login request tracking token\");",
+                  "let reqId = uuid();",
+                  "client.environment.set(\"login_request_id\", reqId);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(\"Verifying login status and message\");",
+                  "client.test(\"Status code is 200 OK\", function() {",
+                  "  client.expect(response.status).to.be(200);",
+                  "});",
+                  "client.test(\"Login session message check\", function() {",
+                  "  let res = response.json();",
+                  "  client.expect(res).to.have.property(\"message\");",
+                  "  client.expect(res.message).to.include(\"logged in user session\");",
+                  "});"
+                ]
+              }
+            }
+          ]
         }
       ]
     }

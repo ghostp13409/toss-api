@@ -160,10 +160,38 @@ fn convert_request(req: &Request) -> Value {
         req_map.insert("body".to_string(), body_obj);
     }
 
-    json!({
-        "name": req.name,
-        "request": req_map
-    })
+    let mut events = Vec::new();
+    if let Some(pre) = &req.pre_request_script {
+        if !pre.is_empty() {
+            events.push(json!({
+                "listen": "prerequest",
+                "script": {
+                    "type": "text/javascript",
+                    "exec": pre.lines().collect::<Vec<&str>>()
+                }
+            }));
+        }
+    }
+    if let Some(post) = &req.post_response_script {
+        if !post.is_empty() {
+            events.push(json!({
+                "listen": "test",
+                "script": {
+                    "type": "text/javascript",
+                    "exec": post.lines().collect::<Vec<&str>>()
+                }
+            }));
+        }
+    }
+
+    let mut item_obj = serde_json::Map::new();
+    item_obj.insert("name".to_string(), json!(req.name));
+    item_obj.insert("request".to_string(), json!(req_map));
+    if !events.is_empty() {
+        item_obj.insert("event".to_string(), json!(events));
+    }
+
+    Value::Object(item_obj)
 }
 
 #[cfg(test)]
@@ -329,5 +357,27 @@ mod tests {
 
         assert_eq!(v["item"][0]["request"]["body"]["mode"], "formdata");
         assert_eq!(v["item"][1]["request"]["body"]["mode"], "urlencoded");
+    }
+
+    #[test]
+    fn test_export_postman_scripts() {
+        let mut col = Collection::new("Script Export Test".to_string());
+        let mut req = Request::new(
+            "Script Req".to_string(),
+            Method::Get,
+            "https://httpbin.org/get".to_string(),
+        );
+        req.pre_request_script = Some("console.log('pre');".to_string());
+        req.post_response_script = Some("client.test('status', function() {});".to_string());
+
+        col.items.push(CollectionItem::Request(req));
+
+        let json_str = export_postman(&col).expect("export should succeed");
+        let v: serde_json::Value = serde_json::from_str(&json_str).unwrap();
+
+        assert_eq!(v["item"][0]["event"][0]["listen"], "prerequest");
+        assert_eq!(v["item"][0]["event"][0]["script"]["exec"][0], "console.log('pre');");
+        assert_eq!(v["item"][0]["event"][1]["listen"], "test");
+        assert_eq!(v["item"][0]["event"][1]["script"]["exec"][0], "client.test('status', function() {});");
     }
 }

@@ -132,6 +132,41 @@ fn parse_item(item: &Value) -> Option<CollectionItem> {
             RequestBody::default()
         };
 
+        let mut pre_request_script = None;
+        let mut post_response_script = None;
+
+        let events_opt = item.get("event").or_else(|| request.get("event"));
+        if let Some(events) = events_opt.and_then(|e| e.as_array()) {
+            for ev in events {
+                let listen = ev.get("listen").and_then(|l| l.as_str()).unwrap_or("");
+                let script_code = if let Some(script) = ev.get("script") {
+                    if let Some(exec) = script.get("exec") {
+                        if let Some(arr) = exec.as_array() {
+                            let lines: Vec<String> = arr
+                                .iter()
+                                .filter_map(|line| line.as_str().map(|s| s.to_string()))
+                                .collect();
+                            Some(lines.join("\n"))
+                        } else if let Some(s) = exec.as_str() {
+                            Some(s.to_string())
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+
+                if listen == "prerequest" && script_code.is_some() {
+                    pre_request_script = script_code;
+                } else if listen == "test" && script_code.is_some() {
+                    post_response_script = script_code;
+                }
+            }
+        }
+
         Some(CollectionItem::Request(Request {
             id: uuid::Uuid::new_v4().to_string(),
             name,
@@ -141,8 +176,8 @@ fn parse_item(item: &Value) -> Option<CollectionItem> {
             params,
             auth: Auth::default(),
             body,
-            pre_request_script: None,
-            post_response_script: None,
+            pre_request_script,
+            post_response_script,
         }))
     } else if let Some(items) = item.get("item") {
         let mut folder = Folder::new(name);
@@ -156,5 +191,58 @@ fn parse_item(item: &Value) -> Option<CollectionItem> {
         Some(CollectionItem::Folder(folder))
     } else {
         None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_import_postman_with_scripts() {
+        let json_str = r#"{
+            "info": { "name": "Script Test Collection" },
+            "item": [
+                {
+                    "name": "Test Request",
+                    "request": {
+                        "method": "GET",
+                        "url": "https://httpbin.org/get"
+                    },
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "exec": [
+                                    "console.log('pre');",
+                                    "client.environment.set('a', '1');"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": "client.test('ok', function() {});"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }"#;
+
+        let col = import_postman_collection(json_str).unwrap();
+        assert_eq!(col.items.len(), 1);
+        if let CollectionItem::Request(req) = &col.items[0] {
+            assert_eq!(
+                req.pre_request_script.as_deref(),
+                Some("console.log('pre');\nclient.environment.set('a', '1');")
+            );
+            assert_eq!(
+                req.post_response_script.as_deref(),
+                Some("client.test('ok', function() {});")
+            );
+        } else {
+            panic!("Expected request item");
+        }
     }
 }
