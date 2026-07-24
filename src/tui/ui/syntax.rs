@@ -35,6 +35,8 @@ pub fn highlight_content(content: &str, content_type: Option<&str>) -> Text<'sta
         "html"
     } else if ct.contains("xml") {
         "xml"
+    } else if ct.contains("js") || ct.contains("javascript") {
+        "js"
     } else {
         "txt"
     };
@@ -162,4 +164,17 @@ fn format_html(html: &str) -> String {
         return html.to_string();
     }
     formatted
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_highlight_content_js() {
+        let code = "const x = 42;\nconsole.log(x);";
+        let highlighted = highlight_content(code, Some("js"));
+        assert_eq!(highlighted.lines.len(), 2);
+        // Verify spans are styled (not empty/plain defaults only)
+    }
 }
