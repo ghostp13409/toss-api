@@ -3,7 +3,7 @@ pub mod input;
 pub mod ui;
 
 use crate::engine::http::RequestEngine;
-use app::{App, FocusedPanel, InputMode, ResponseStats, TuiAction};
+use app::{App, FocusedPanel, InputMode, ResponseStats, ScriptsSubTab, TuiAction};
 use arboard::Clipboard;
 use crossterm::{
     event::{self, Event, KeyEvent},
@@ -401,6 +401,99 @@ where
                                     req_mut.body.raw.content = new_body;
                                     if req_mut.body.raw.content_type.is_empty() {
                                         req_mut.body.raw.content_type = "application/json".to_string();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    let _ = std::fs::remove_file(temp_file);
+
+                    let _ = execute!(std::io::stdout(), EnterAlternateScreen);
+                    let _ = enable_raw_mode();
+                    let _ = terminal.clear();
+
+                    app.input_mode = InputMode::Normal;
+                    is_paused.store(false, Ordering::SeqCst);
+                }
+                TuiAction::EditScript => {
+                    let (req_id, current_script, subtab) =
+                        if let Some(req) = app.get_current_request() {
+                            let script = match app.scripts_subtab {
+                                ScriptsSubTab::PreRequest => {
+                                    req.pre_request_script.clone().unwrap_or_default()
+                                }
+                                ScriptsSubTab::PostResponse => {
+                                    req.post_response_script.clone().unwrap_or_default()
+                                }
+                            };
+                            (req.id.clone(), script, app.scripts_subtab)
+                        } else {
+                            continue;
+                        };
+
+                    is_paused.store(true, Ordering::SeqCst);
+
+                    let prefix = match subtab {
+                        ScriptsSubTab::PreRequest => "pre",
+                        ScriptsSubTab::PostResponse => "post",
+                    };
+                    let mut temp_file = std::env::temp_dir();
+                    temp_file.push(format!("toss_script_{}_{}.js", prefix, req_id));
+
+                    let _ = std::fs::write(&temp_file, current_script);
+
+                    let _ = disable_raw_mode();
+                    let _ = execute!(std::io::stdout(), LeaveAlternateScreen);
+
+                    let editor = app
+                        .external_editor
+                        .clone()
+                        .or_else(|| std::env::var("EDITOR").ok());
+
+                    let editor_to_use = editor.unwrap_or_else(|| {
+                        if cfg!(windows) {
+                            "nvim.exe".to_string()
+                        } else {
+                            "vi".to_string()
+                        }
+                    });
+
+                    // Try to launch the editor
+                    let mut status = std::process::Command::new(&editor_to_use)
+                        .arg(&temp_file)
+                        .status();
+
+                    // If the specified editor fails and we are on Windows, show the "Open With" dialog
+                    if status.is_err() && cfg!(windows) {
+                        println!("\nEditor '{}' not found or failed to start.", editor_to_use);
+                        println!("Opening Windows 'Open With' dialog...");
+                        println!("--------------------------------------------------");
+                        println!("1. Select your editor in the popup.");
+                        println!("2. Edit, SAVE, and CLOSE the editor.");
+                        println!("3. Press ENTER here to finish.");
+                        println!("--------------------------------------------------");
+
+                        let _ = std::process::Command::new("rundll32.exe")
+                            .args(["shell32.dll,OpenAs_RunDLL", &temp_file.to_string_lossy()])
+                            .status();
+
+                        // Wait for manual confirmation since rundll32 returns immediately
+                        let mut input = String::new();
+                        let _ = std::io::stdin().read_line(&mut input);
+                        status = Ok(std::process::ExitStatus::default()); // Mock success
+                    }
+
+                    if status.is_ok() {
+                        if let Ok(new_script) = std::fs::read_to_string(&temp_file) {
+                            if let Some(col) = app.collections.get_mut(app.active_collection_index) {
+                                if let Some(req_mut) = col.find_request_mut(&req_id) {
+                                    match subtab {
+                                        ScriptsSubTab::PreRequest => {
+                                            req_mut.pre_request_script = Some(new_script);
+                                        }
+                                        ScriptsSubTab::PostResponse => {
+                                            req_mut.post_response_script = Some(new_script);
+                                        }
                                     }
                                 }
                             }

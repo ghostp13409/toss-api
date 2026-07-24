@@ -674,10 +674,12 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
         }
 
         KeyCode::Char('v') => {
-            if app.focused_panel == FocusedPanel::Details
-                && app.selected_property_tab == PropertyTab::Body
-            {
-                app.pending_actions.push(TuiAction::EditBody);
+            if app.focused_panel == FocusedPanel::Details {
+                if app.selected_property_tab == PropertyTab::Body {
+                    app.pending_actions.push(TuiAction::EditBody);
+                } else if app.selected_property_tab == PropertyTab::Scripts {
+                    app.pending_actions.push(TuiAction::EditScript);
+                }
             }
         }
 

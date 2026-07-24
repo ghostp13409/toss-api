@@ -66,6 +66,7 @@ pub enum PropertyEditorField {
 pub enum TuiAction {
     SendRequest,
     EditBody,
+    EditScript,
     CopyBody,
     Copy,
     PasteBody,
