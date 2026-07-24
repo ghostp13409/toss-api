@@ -1,0 +1,105 @@
+name: Publish Ecosystem Packages
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  # 1. Publish to crates.io
+  publish-crates:
+    name: Publish to crates.io
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Publish Crate
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          if [ -z "$CARGO_REGISTRY_TOKEN" ]; then
+            echo "CARGO_REGISTRY_TOKEN secret is not set. Skipping crates.io publish."
+            exit 0
+          fi
+          cargo publish --token "$CARGO_REGISTRY_TOKEN"
+
+  # 2. Update AUR Package (Arch Linux)
+  publish-aur:
+    name: Update AUR Package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check AUR Secret
+        id: check-secret
+        run: |
+          if [ -z "${{ secrets.AUR_SSH_KEY }}" ]; then
+            echo "AUR_SSH_KEY secret is not set. Skipping AUR deployment."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to AUR
+        if: steps.check-secret.outputs.skip == 'false'
+        uses: KSF-Server/aur-release-action@v3
+        with:
+          package_name: toss-bin
+          ssh_private_key: ${{ secrets.AUR_SSH_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          updpkgsums: true
+
+  # 3. Submit to WinGet (Windows Package Manager)
+  publish-winget:
+    name: Submit WinGet Manifest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check WinGet Secret
+        id: check-secret
+        run: |
+          if [ -z "${{ secrets.WINGET_TOKEN }}" ]; then
+            echo "WINGET_TOKEN secret is not set. Skipping WinGet submission."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Release to WinGet
+        if: steps.check-secret.outputs.skip == 'false'
+        uses: vedantmgoyal2009/winget-releaser@v2
+        with:
+          identifier: ghostp13409.toss-api
+          token: ${{ secrets.WINGET_TOKEN }}
+
+  # 4. Build and Publish Snap Package (Linux)
+  publish-snap:
+    name: Build & Publish Snap
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Snapcraft Secret
+        id: check-secret
+        run: |
+          if [ -z "${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}" ]; then
+            echo "SNAPCRAFT_STORE_CREDENTIALS secret is not set. Skipping Snap publish."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build Snap
+        if: steps.check-secret.outputs.skip == 'false'
+        uses: canonical/action-build@v1
+        id: build
+
+      - name: Publish Snap
+        if: steps.check-secret.outputs.skip == 'false'
+        uses: canonical/action-publish@v1
+        with:
+          store-token: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+          snap: ${{ steps.build.outputs.snap }}
+          release: stable

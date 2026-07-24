@@ -1,0 +1,28 @@
+name: toss-api
+base: core22
+version: git
+summary: A Vim-inspired TUI and CLI API client for exploring and testing endpoints
+description: |
+  toss-api (toss) is a fast, keyboard-driven Vim-inspired TUI and CLI API client
+  written in Rust for exploring, testing, and interacting with HTTP APIs.
+
+grade: stable
+confinement: strict
+
+apps:
+  toss:
+    command: bin/toss-api
+    plugs:
+      - network
+      - home
+      - removable-media
+
+parts:
+  toss-api:
+    plugin: rust
+    source: .
+    build-packages:
+      - pkg-config
+      - libssl-dev
+    stage-packages:
+      - libssl3

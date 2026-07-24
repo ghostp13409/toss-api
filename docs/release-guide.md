@@ -47,12 +47,32 @@ To add more targets, update the `targets` array in `dist-workspace.toml`.
 ## 🏗 CI/CD Workflow
 - **Pull Requests**: Every PR triggers a "Release Plan" check. This ensures that the code still compiles and is ready for distribution, but it **does not** create a release.
 - **Tag Pushes**: Pushing a tag matching `v*.*.*` (e.g., `v1.2.3`) triggers the full release pipeline:
-    1. Builds binaries for all targets.
-    2. Generates installers (Shell, PowerShell, Homebrew).
-    3. Creates a GitHub Release.
-    4. Uploads all artifacts to the release page.
+    1. **cargo-dist**: Builds binaries for all targets, generates shell/powershell installers, creates a GitHub Release, and uploads artifacts.
+    2. **Ecosystem Releases** (`release-ecosystems.yml`): Automatically publishes to **crates.io**, **AUR**, **WinGet**, and **Snap Store** upon release publication.
 
-## 📦 Installers
-Users can install Toss-API using the generated installers:
-- **Linux/macOS**: `curl --proto '=https' --tlsv1.2 -LsSf https://github.com/ghostp13409/toss-api/releases/latest/download/toss-api-installer.sh | sh`
-- **Windows**: `powershell -c "irm https://github.com/ghostp13409/toss-api/releases/latest/download/toss-api-installer.ps1 | iex"`
+---
+
+## 🔑 Required Repository Secrets
+
+To activate automated deployment across all platforms, configure the following secrets in GitHub Repository Settings (**Settings -> Secrets and variables -> Actions**):
+
+| Platform | Secret Name | Description |
+| :--- | :--- | :--- |
+| **crates.io** | `CARGO_REGISTRY_TOKEN` | API Token generated from [crates.io/me](https://crates.io/me) |
+| **AUR** | `AUR_SSH_KEY` | Private SSH key paired with public key on [aur.archlinux.org](https://aur.archlinux.org) |
+| **WinGet** | `WINGET_TOKEN` | GitHub Personal Access Token (PAT) with `repo` permissions to submit PR to `microsoft/winget-pkgs` |
+| **Snap Store** | `SNAPCRAFT_STORE_CREDENTIALS` | Token generated via `snapcraft export-login` |
+
+---
+
+## 📦 Distribution Channels & Installation
+
+Users can install `toss-api` across platforms:
+
+- **crates.io**: `cargo install toss-api`
+- **Arch Linux (AUR)**: `yay -S toss-bin`
+- **Windows (WinGet)**: `winget install toss-api`
+- **Linux (Snap)**: `snap install toss-api`
+- **Linux/macOS Shell Script**: `curl --proto '=https' --tlsv1.2 -LsSf https://github.com/ghostp13409/toss-api/releases/latest/download/toss-api-installer.sh | sh`
+- **Windows PowerShell Script**: `powershell -c "irm https://github.com/ghostp13409/toss-api/releases/latest/download/toss-api-installer.ps1 | iex"`
+
