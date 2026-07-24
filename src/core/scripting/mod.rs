@@ -163,4 +163,30 @@ mod tests {
         assert_eq!(res.test_results.len(), 1);
         assert_eq!(res.test_results[0].passed, true, "Test failed: {:?}", res.test_results[0].error);
     }
+
+    #[test]
+    fn test_expanded_expect_assertions() {
+        let script = r#"
+            let data = { status: 200, name: "Toss", items: [1, 2, 3] };
+            pm.test("to.be(200)", function() { pm.expect(data.status).to.be(200); });
+            pm.test("to.equal(200)", function() { pm.expect(data.status).to.equal(200); });
+            pm.test("to.have.property", function() { pm.expect(data).to.have.property("name"); });
+            pm.test("to.contain", function() { pm.expect(data.name).to.contain("os"); });
+            pm.test("to.exist", function() { pm.expect(data.name).to.exist(); });
+            pm.test("to.be.true", function() { pm.expect(true).to.be.true(); });
+            pm.test("to.be.a", function() { pm.expect(data.name).to.be.a("string"); });
+        "#;
+
+        let mut env_vars = Vec::new();
+        let mut headers = Vec::new();
+        let mut url = "https://httpbin.org/get".to_string();
+
+        let res = execute_pre_request_script(script, &mut env_vars, &mut headers, &mut url)
+            .expect("script execution should succeed");
+
+        assert_eq!(res.test_results.len(), 7);
+        for t in &res.test_results {
+            assert_eq!(t.passed, true, "Test failed: {} - {:?}", t.name, t.error);
+        }
+    }
 }

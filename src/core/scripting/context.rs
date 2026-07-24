@@ -59,13 +59,62 @@ pub fn get_client_shim(env_json: &str, headers_json: &str, url_json: &str) -> St
                 }}
             }},
             expect: function(val) {{
-                return {{
-                    to: {{
-                        equal: function(expected) {{
-                            if (val !== expected) throw new Error("Expected " + expected + " but got " + val);
+                var to = {{
+                    equal: function(expected) {{
+                        if (val !== expected) throw new Error("Expected " + expected + " but got " + val);
+                    }},
+                    eql: function(expected) {{
+                        if (val !== expected && JSON.stringify(val) !== JSON.stringify(expected)) {{
+                            throw new Error("Expected " + JSON.stringify(expected) + " but got " + JSON.stringify(val));
                         }}
+                    }},
+                    exist: function() {{
+                        if (val === undefined || val === null) throw new Error("Expected value to exist but got " + val);
+                    }},
+                    ok: function() {{
+                        if (!val) throw new Error("Expected " + val + " to be truthy");
+                    }},
+                    contain: function(item) {{
+                        if (typeof val === 'string' || Array.isArray(val)) {{
+                            if (val.indexOf(item) === -1) throw new Error("Expected " + JSON.stringify(val) + " to contain " + JSON.stringify(item));
+                        }} else if (val && typeof val === 'object') {{
+                            if (!(item in val)) throw new Error("Expected object to contain key " + item);
+                        }}
+                    }},
+                    include: function(item) {{
+                        if (typeof val === 'string' || Array.isArray(val)) {{
+                            if (val.indexOf(item) === -1) throw new Error("Expected " + JSON.stringify(val) + " to include " + JSON.stringify(item));
+                        }} else if (val && typeof val === 'object') {{
+                            if (!(item in val)) throw new Error("Expected object to include key " + item);
+                        }}
+                    }},
+                    property: function(prop) {{
+                        if (!val || typeof val !== 'object' || !(prop in val)) {{
+                            throw new Error("Expected object to have property '" + prop + "'");
+                        }}
+                    }},
+                    a: function(type) {{
+                        if (typeof val !== type) throw new Error("Expected type " + type + " but got " + typeof val);
+                    }},
+                    an: function(type) {{
+                        if (typeof val !== type) throw new Error("Expected type " + type + " but got " + typeof val);
                     }}
                 }};
+                to.have = to;
+                var beFn = function(expected) {{
+                    if (arguments.length === 0) return to;
+                    if (val !== expected) throw new Error("Expected " + expected + " but got " + val);
+                }};
+                beFn.equal = to.equal;
+                beFn.eql = to.eql;
+                beFn.ok = function() {{ if (!val) throw new Error("Expected " + val + " to be truthy"); }};
+                beFn.true = function() {{ if (val !== true) throw new Error("Expected " + val + " to be true"); }};
+                beFn.false = function() {{ if (val !== false) throw new Error("Expected " + val + " to be false"); }};
+                beFn.a = to.a;
+                beFn.an = to.an;
+                to.be = beFn;
+
+                return {{ to: to }};
             }}
         }};
         
