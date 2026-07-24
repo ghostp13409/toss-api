@@ -109,9 +109,9 @@ pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
     let tabs = [
         ("O", StatsTab::Overview),
         ("N", StatsTab::Network),
-        ("L", StatsTab::Payload),
+        ("P", StatsTab::Payload),
         ("S", StatsTab::Security),
-        ("E", StatsTab::Tests),
+        ("T", StatsTab::Tests),
     ];
     let tab_spans: Vec<Span> = tabs
         .iter()
