@@ -38,6 +38,9 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                 app.focused_panel = FocusedPanel::Details;
             }
         }
+        KeyCode::Char('L') => {
+            app.show_console = !app.show_console;
+        }
         KeyCode::Char('E') => app.focused_panel = FocusedPanel::Response,
         KeyCode::Char('T') => app.focused_panel = FocusedPanel::Stats,
         KeyCode::Char('V') => {
@@ -309,6 +312,8 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                                     app.url = req.url.clone();
                                     req.auth.auto_select();
                                     req.body.auto_select();
+                                    app.pre_request_editor_state.lines = edtui::Lines::from(req.pre_request_script.as_deref().unwrap_or(""));
+                                    app.post_response_editor_state.lines = edtui::Lines::from(req.post_response_script.as_deref().unwrap_or(""));
                                     break;
                                 }
                             }
@@ -337,6 +342,8 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                                     app.url = req.url.clone();
                                     req.auth.auto_select();
                                     req.body.auto_select();
+                                    app.pre_request_editor_state.lines = edtui::Lines::from(req.pre_request_script.as_deref().unwrap_or(""));
+                                    app.post_response_editor_state.lines = edtui::Lines::from(req.post_response_script.as_deref().unwrap_or(""));
                                 }
                             }
                             app.focus_request_bar();
@@ -613,6 +620,7 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                 match app.selected_property_tab {
                     PropertyTab::Auth => app.cycle_auth_type(),
                     PropertyTab::Body => app.cycle_body_type(),
+                    PropertyTab::Scripts => app.cycle_scripts_subtab(),
                     _ => {}
                 }
             } else if app.focused_panel == FocusedPanel::Stats {
@@ -666,10 +674,12 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
         }
 
         KeyCode::Char('v') => {
-            if app.focused_panel == FocusedPanel::Details
-                && app.selected_property_tab == PropertyTab::Body
-            {
-                app.pending_actions.push(TuiAction::EditBody);
+            if app.focused_panel == FocusedPanel::Details {
+                if app.selected_property_tab == PropertyTab::Body {
+                    app.pending_actions.push(TuiAction::EditBody);
+                } else if app.selected_property_tab == PropertyTab::Scripts {
+                    app.pending_actions.push(TuiAction::EditScript);
+                }
             }
         }
 
@@ -764,11 +774,57 @@ pub fn handle_normal_mode(app: &mut App, key: KeyEvent) {
                             }
                         }
                     }
-                    _ => {}
+                    PropertyTab::Scripts => {
+                        let (pre_req, post_res) = if let Some(req) = app.get_current_request() {
+                            (req.pre_request_script.clone(), req.post_response_script.clone())
+                        } else {
+                            (None, None)
+                        };
+                        app.input_mode = InputMode::BodyEditor;
+                        match app.scripts_subtab {
+                            crate::tui::app::ScriptsSubTab::PreRequest => {
+                                app.pre_request_editor_state.lines = edtui::Lines::from(pre_req.as_deref().unwrap_or(""));
+                                app.pre_request_editor_state.mode = edtui::EditorMode::Insert;
+                            }
+                            crate::tui::app::ScriptsSubTab::PostResponse => {
+                                app.post_response_editor_state.lines = edtui::Lines::from(post_res.as_deref().unwrap_or(""));
+                                app.post_response_editor_state.mode = edtui::EditorMode::Insert;
+                            }
+                        }
+                    }
                 }
             }
         }
 
         _ => {}
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+
+    #[test]
+    fn test_normal_mode_scripts_and_console_shortcuts() {
+        let mut app = App::new();
+        app.current_request_id = Some("test-id".to_string());
+
+        // Press 'S' -> switch to Scripts tab & Details panel
+        handle_normal_mode(&mut app, KeyEvent::new(KeyCode::Char('S'), KeyModifiers::SHIFT));
+        assert_eq!(app.selected_property_tab, PropertyTab::Scripts);
+        assert_eq!(app.focused_panel, FocusedPanel::Details);
+
+        // Press 's' -> should not switch tab
+        app.selected_property_tab = PropertyTab::Params;
+        handle_normal_mode(&mut app, KeyEvent::new(KeyCode::Char('s'), KeyModifiers::NONE));
+        assert_eq!(app.selected_property_tab, PropertyTab::Params);
+
+        // Press 'L' -> toggle show_console
+        assert!(!app.show_console);
+        handle_normal_mode(&mut app, KeyEvent::new(KeyCode::Char('L'), KeyModifiers::SHIFT));
+        assert!(app.show_console);
+        handle_normal_mode(&mut app, KeyEvent::new(KeyCode::Char('L'), KeyModifiers::SHIFT));
+        assert!(!app.show_console);
     }
 }

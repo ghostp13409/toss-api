@@ -3,7 +3,7 @@ pub mod input;
 pub mod ui;
 
 use crate::engine::http::RequestEngine;
-use app::{App, FocusedPanel, InputMode, ResponseStats, TuiAction};
+use app::{App, FocusedPanel, InputMode, ResponseStats, ScriptsSubTab, TuiAction};
 use arboard::Clipboard;
 use crossterm::{
     event::{self, Event, KeyEvent},
@@ -25,10 +25,12 @@ enum AppEvent {
     Input(KeyEvent),
     Tick,
     HttpResponse(
+        usize,
         String,
         Option<String>,
         Option<ResponseStats>,
         Option<String>,
+        Option<crate::core::scripting::ScriptExecutionResult>,
     ),
 }
 
@@ -133,10 +135,17 @@ where
                         }
                     }
                 }
-                AppEvent::HttpResponse(body, status, stats, content_type) => {
+                AppEvent::HttpResponse(col_idx, body, status, stats, content_type, _script_res) => {
                     app.response_body = body;
                     app.response_content_type = content_type;
                     app.response_status = status;
+                    if let Some(ref s) = stats {
+                        if let Some(env_vars) = &s.updated_env_vars {
+                            if col_idx < app.collections.len() {
+                                app.collections[col_idx].env_vars = env_vars.clone();
+                            }
+                        }
+                    }
                     app.response_stats_data = stats;
                     app.response_scroll = 0;
                     app.response_cursor_row = 0;
@@ -206,6 +215,11 @@ where
                         let tx_res = tx.clone();
                         let final_url = url.clone();
                         let final_method = format!("{:?}", method);
+                        
+                        let pre_script = req.pre_request_script.clone();
+                        let post_script = req.post_response_script.clone();
+                        let mut env_vars = app.get_active_collection_env_vars();
+                        let collection_index = app.active_collection_index;
 
                         tokio::spawn(async move {
                             let client = reqwest::Client::builder()
@@ -217,18 +231,28 @@ where
                             let engine = RequestEngine::with_client(client);
 
                             match engine
-                                .send(method, &url, headers, Vec::new(), body_type, auth)
+                                .send_with_pipeline(
+                                    method, 
+                                    &url, 
+                                    headers, 
+                                    Vec::new(), 
+                                    body_type, 
+                                    auth,
+                                    pre_script.as_deref(),
+                                    post_script.as_deref(),
+                                    &mut env_vars
+                                )
                                 .await
                             {
-                                Ok(res) => {
+                                Ok(result) => {
                                     let ttfb = start.elapsed();
-                                    let status = Some(res.status().to_string());
-                                    let version = format!("{:?}", res.version());
-                                    let remote_addr = res.remote_addr().map(|a| a.to_string());
+                                    let status = Some(result.status.to_string());
+                                    let version = format!("{:?}", result.version);
+                                    let remote_addr = result.remote_addr.map(|a| a.to_string());
 
                                     let mut header_size = 0;
                                     let mut headers_map = HashMap::new();
-                                    for (k, v) in res.headers() {
+                                    for (k, v) in &result.headers {
                                         let key_str = k.as_str().to_string();
                                         let val_str = v.to_str().unwrap_or("").to_string();
                                         header_size += key_str.len() + val_str.len() + 4;
@@ -237,14 +261,22 @@ where
 
                                     let content_type = headers_map.get("content-type").cloned();
 
-                                    let body_start = Instant::now();
-                                    let body_bytes = res.bytes().await.unwrap_or_default();
-                                    let download_time = body_start.elapsed();
+                                    let download_time = start.elapsed() - ttfb;
                                     let total_time = start.elapsed();
 
-                                    let body_size = body_bytes.len();
-                                    let body_text =
-                                        String::from_utf8_lossy(&body_bytes).into_owned();
+                                    let body_size = result.body.len();
+                                    let body_text = String::from_utf8_lossy(&result.body).into_owned();
+
+                                    let mut console_logs = Vec::new();
+                                    let mut test_results = Vec::new();
+                                    if let Some(pre) = &result.pre_script_result {
+                                        console_logs.extend(pre.console_logs.clone());
+                                        test_results.extend(pre.test_results.clone());
+                                    }
+                                    if let Some(post) = &result.post_script_result {
+                                        console_logs.extend(post.console_logs.clone());
+                                        test_results.extend(post.test_results.clone());
+                                    }
 
                                     let stats = ResponseStats {
                                         total_time,
@@ -260,22 +292,29 @@ where
                                         url: final_url,
                                         method: final_method,
                                         remote_addr,
+                                        test_results,
+                                        console_logs,
+                                        updated_env_vars: Some(env_vars),
                                     };
 
                                     let _ = tx_res
                                         .send(AppEvent::HttpResponse(
+                                            collection_index,
                                             body_text,
                                             status,
                                             Some(stats),
                                             content_type,
+                                            result.post_script_result,
                                         ))
                                         .await;
                                 }
                                 Err(e) => {
                                     let _ = tx_res
                                         .send(AppEvent::HttpResponse(
+                                            collection_index,
                                             format!("Error: {}", e),
                                             Some("ERROR".to_string()),
+                                            None,
                                             None,
                                             None,
                                         ))
@@ -362,6 +401,99 @@ where
                                     req_mut.body.raw.content = new_body;
                                     if req_mut.body.raw.content_type.is_empty() {
                                         req_mut.body.raw.content_type = "application/json".to_string();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    let _ = std::fs::remove_file(temp_file);
+
+                    let _ = execute!(std::io::stdout(), EnterAlternateScreen);
+                    let _ = enable_raw_mode();
+                    let _ = terminal.clear();
+
+                    app.input_mode = InputMode::Normal;
+                    is_paused.store(false, Ordering::SeqCst);
+                }
+                TuiAction::EditScript => {
+                    let (req_id, current_script, subtab) =
+                        if let Some(req) = app.get_current_request() {
+                            let script = match app.scripts_subtab {
+                                ScriptsSubTab::PreRequest => {
+                                    req.pre_request_script.clone().unwrap_or_default()
+                                }
+                                ScriptsSubTab::PostResponse => {
+                                    req.post_response_script.clone().unwrap_or_default()
+                                }
+                            };
+                            (req.id.clone(), script, app.scripts_subtab)
+                        } else {
+                            continue;
+                        };
+
+                    is_paused.store(true, Ordering::SeqCst);
+
+                    let prefix = match subtab {
+                        ScriptsSubTab::PreRequest => "pre",
+                        ScriptsSubTab::PostResponse => "post",
+                    };
+                    let mut temp_file = std::env::temp_dir();
+                    temp_file.push(format!("toss_script_{}_{}.js", prefix, req_id));
+
+                    let _ = std::fs::write(&temp_file, current_script);
+
+                    let _ = disable_raw_mode();
+                    let _ = execute!(std::io::stdout(), LeaveAlternateScreen);
+
+                    let editor = app
+                        .external_editor
+                        .clone()
+                        .or_else(|| std::env::var("EDITOR").ok());
+
+                    let editor_to_use = editor.unwrap_or_else(|| {
+                        if cfg!(windows) {
+                            "nvim.exe".to_string()
+                        } else {
+                            "vi".to_string()
+                        }
+                    });
+
+                    // Try to launch the editor
+                    let mut status = std::process::Command::new(&editor_to_use)
+                        .arg(&temp_file)
+                        .status();
+
+                    // If the specified editor fails and we are on Windows, show the "Open With" dialog
+                    if status.is_err() && cfg!(windows) {
+                        println!("\nEditor '{}' not found or failed to start.", editor_to_use);
+                        println!("Opening Windows 'Open With' dialog...");
+                        println!("--------------------------------------------------");
+                        println!("1. Select your editor in the popup.");
+                        println!("2. Edit, SAVE, and CLOSE the editor.");
+                        println!("3. Press ENTER here to finish.");
+                        println!("--------------------------------------------------");
+
+                        let _ = std::process::Command::new("rundll32.exe")
+                            .args(["shell32.dll,OpenAs_RunDLL", &temp_file.to_string_lossy()])
+                            .status();
+
+                        // Wait for manual confirmation since rundll32 returns immediately
+                        let mut input = String::new();
+                        let _ = std::io::stdin().read_line(&mut input);
+                        status = Ok(std::process::ExitStatus::default()); // Mock success
+                    }
+
+                    if status.is_ok() {
+                        if let Ok(new_script) = std::fs::read_to_string(&temp_file) {
+                            if let Some(col) = app.collections.get_mut(app.active_collection_index) {
+                                if let Some(req_mut) = col.find_request_mut(&req_id) {
+                                    match subtab {
+                                        ScriptsSubTab::PreRequest => {
+                                            req_mut.pre_request_script = Some(new_script);
+                                        }
+                                        ScriptsSubTab::PostResponse => {
+                                            req_mut.post_response_script = Some(new_script);
+                                        }
                                     }
                                 }
                             }

@@ -226,17 +226,26 @@ impl App {
             StatsTab::Overview => StatsTab::Network,
             StatsTab::Network => StatsTab::Payload,
             StatsTab::Payload => StatsTab::Security,
-            StatsTab::Security => StatsTab::Overview,
+            StatsTab::Security => StatsTab::Tests,
+            StatsTab::Tests => StatsTab::Overview,
         };
         self.stats_scroll = 0;
     }
 
+    pub fn cycle_scripts_subtab(&mut self) {
+        self.scripts_subtab = match self.scripts_subtab {
+            ScriptsSubTab::PreRequest => ScriptsSubTab::PostResponse,
+            ScriptsSubTab::PostResponse => ScriptsSubTab::PreRequest,
+        };
+    }
+
     pub fn prev_stats_tab(&mut self) {
         self.selected_stats_tab = match self.selected_stats_tab {
-            StatsTab::Overview => StatsTab::Security,
+            StatsTab::Overview => StatsTab::Tests,
             StatsTab::Network => StatsTab::Overview,
             StatsTab::Payload => StatsTab::Network,
             StatsTab::Security => StatsTab::Payload,
+            StatsTab::Tests => StatsTab::Security,
         };
         self.stats_scroll = 0;
     }
@@ -284,5 +293,50 @@ impl App {
         self.response_horizontal_scroll = 0;
         self.stats_scroll = 0;
         self.details_scroll = 0;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_scripts_subtab_cycling() {
+        let mut app = App::new();
+        assert_eq!(app.scripts_subtab, ScriptsSubTab::PreRequest);
+        app.cycle_scripts_subtab();
+        assert_eq!(app.scripts_subtab, ScriptsSubTab::PostResponse);
+        app.cycle_scripts_subtab();
+        assert_eq!(app.scripts_subtab, ScriptsSubTab::PreRequest);
+    }
+
+    #[test]
+    fn test_stats_tab_navigation() {
+        let mut app = App::new();
+        assert_eq!(app.selected_stats_tab, StatsTab::Overview);
+
+        // Forward
+        app.cycle_stats_tab();
+        assert_eq!(app.selected_stats_tab, StatsTab::Network);
+        app.cycle_stats_tab();
+        assert_eq!(app.selected_stats_tab, StatsTab::Payload);
+        app.cycle_stats_tab();
+        assert_eq!(app.selected_stats_tab, StatsTab::Security);
+        app.cycle_stats_tab();
+        assert_eq!(app.selected_stats_tab, StatsTab::Tests);
+        app.cycle_stats_tab();
+        assert_eq!(app.selected_stats_tab, StatsTab::Overview);
+
+        // Backward
+        app.prev_stats_tab();
+        assert_eq!(app.selected_stats_tab, StatsTab::Tests);
+        app.prev_stats_tab();
+        assert_eq!(app.selected_stats_tab, StatsTab::Security);
+        app.prev_stats_tab();
+        assert_eq!(app.selected_stats_tab, StatsTab::Payload);
+        app.prev_stats_tab();
+        assert_eq!(app.selected_stats_tab, StatsTab::Network);
+        app.prev_stats_tab();
+        assert_eq!(app.selected_stats_tab, StatsTab::Overview);
     }
 }

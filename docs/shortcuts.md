@@ -69,4 +69,4 @@ Toss has different state modes to prevent conflicts between navigation and typin
 
 1. **Normal Mode**: The default state. Keys like `j`, `k`, `h`, `l` navigate the UI.
 2. **Editing Mode**: Triggered automatically when entering Layer 3 (Property Details) text inputs, or manually via `i`. Keystrokes are captured as text. Press `Esc` to return to Normal Mode.
-3. **Command Mode (`:`)**: Pressing `:` opens a bottom command line for quick power actions (e.g., `:set env dev`, `:import ./swagger.json`). Press `Enter` to execute or `Esc` to cancel.
+3. **Command Mode (`:`)**: Pressing `:` opens a bottom command line for quick power actions (e.g., `:set env dev`, `:import ./swagger.json`, `:export openapi api_spec.json`). Press `Enter` to execute or `Esc` to cancel.

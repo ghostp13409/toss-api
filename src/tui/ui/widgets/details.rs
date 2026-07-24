@@ -8,7 +8,7 @@ use crate::tui::ui::utils::{
 };
 use ratatui::{
     Frame,
-    layout::{Constraint, Direction, Layout, Margin, Rect},
+    layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Paragraph, Row, Table, Tabs, Wrap},
@@ -92,6 +92,7 @@ pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
         StatsTab::Network => "Network",
         StatsTab::Payload => "Payload",
         StatsTab::Security => "Security",
+        StatsTab::Tests => "Tests",
     };
 
     let stat_block = create_block(
@@ -108,8 +109,9 @@ pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
     let tabs = [
         ("O", StatsTab::Overview),
         ("N", StatsTab::Network),
-        ("L", StatsTab::Payload),
+        ("P", StatsTab::Payload),
         ("S", StatsTab::Security),
+        ("T", StatsTab::Tests),
     ];
     let tab_spans: Vec<Span> = tabs
         .iter()
@@ -346,6 +348,36 @@ pub fn render_right_column(f: &mut Frame, app: &mut App, area: Rect) {
                 if stat_lines.len() <= 2 {
                     stat_lines.push(Line::raw(" No security/governance"));
                     stat_lines.push(Line::raw(" headers found."));
+                }
+            }
+            StatsTab::Tests => {
+                let passed = stats.test_results.iter().filter(|t| t.passed).count();
+                let total = stats.test_results.len();
+                let color = if passed == total && total > 0 { ratatui::style::Color::Green } else if total > 0 { ratatui::style::Color::Red } else { ratatui::style::Color::White };
+                stat_lines.push(ratatui::text::Line::styled(
+                    format!(" PASS: {} / {}", passed, total),
+                    ratatui::style::Style::default().fg(color).add_modifier(ratatui::style::Modifier::BOLD)
+                ));
+                stat_lines.push(ratatui::text::Line::raw(""));
+                if stats.test_results.is_empty() {
+                    stat_lines.push(ratatui::text::Line::styled(" No tests run.", ratatui::style::Style::default().fg(ratatui::style::Color::DarkGray)));
+                } else {
+                    for t in &stats.test_results {
+                        let color = if t.passed { ratatui::style::Color::Green } else { ratatui::style::Color::Red };
+                        let mark = if t.passed { "✓" } else { "✗" };
+                        stat_lines.push(ratatui::text::Line::from(vec![
+                            ratatui::text::Span::styled(format!(" {} ", mark), ratatui::style::Style::default().fg(color)),
+                            ratatui::text::Span::raw(&t.name),
+                        ]));
+                        if !t.passed {
+                            if let Some(err) = &t.error {
+                                stat_lines.push(ratatui::text::Line::from(vec![
+                                    ratatui::text::Span::styled("   ↳ ", ratatui::style::Style::default().fg(ratatui::style::Color::DarkGray)),
+                                    ratatui::text::Span::styled(err, ratatui::style::Style::default().fg(ratatui::style::Color::Red)),
+                                ]));
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -711,18 +743,76 @@ pub fn render_details_area(f: &mut Frame, app: &mut App, area: Rect) {
             }
         }
         PropertyTab::Scripts => {
-            let block = create_block(
-                title_with_key("S", "Scripts"),
-                app.focused_panel == FocusedPanel::Details,
-            );
+            let is_focused = app.focused_panel == FocusedPanel::Details
+                || app.input_mode == InputMode::BodyEditor;
+            let subtab_name = match app.scripts_subtab {
+                crate::tui::app::ScriptsSubTab::PreRequest => "Pre-Request",
+                crate::tui::app::ScriptsSubTab::PostResponse => "Post-Response",
+            };
+            let title = if app.input_mode == InputMode::BodyEditor {
+                format!(" Scripts: {} [js] (Press 'Esc' to finish) ", subtab_name)
+            } else {
+                format!(
+                    " Scripts: {} [js] (Press 'i' for inline edit, 'v' for external) ",
+                    subtab_name
+                )
+            };
+            let block = create_block(title_with_key("S", title), is_focused);
+
+            let layout = ratatui::layout::Layout::default()
+                .direction(ratatui::layout::Direction::Vertical)
+                .constraints([ratatui::layout::Constraint::Length(1), ratatui::layout::Constraint::Min(0)])
+                .split(block.inner(area));
+
+            let subtabs = match app.scripts_subtab {
+                crate::tui::app::ScriptsSubTab::PreRequest => " [Pre-Request]  Post-Response ",
+                crate::tui::app::ScriptsSubTab::PostResponse => "  Pre-Request  [Post-Response] ",
+            };
             f.render_widget(
-                Paragraph::new(" Scripts editor coming soon "),
-                area.inner(Margin {
-                    vertical: 1,
-                    horizontal: 1,
-                }),
+                ratatui::widgets::Paragraph::new(subtabs)
+                    .style(ratatui::style::Style::default().fg(ratatui::style::Color::Yellow)),
+                layout[0],
             );
+
             f.render_widget(block, area);
+
+            if app.input_mode == InputMode::BodyEditor {
+                let mut editor = if app.scripts_subtab == crate::tui::app::ScriptsSubTab::PreRequest {
+                    edtui::EditorView::new(&mut app.pre_request_editor_state)
+                } else {
+                    edtui::EditorView::new(&mut app.post_response_editor_state)
+                };
+                editor = editor.wrap(true).line_numbers(edtui::LineNumbers::Absolute);
+
+                if let Ok(highlighter) = edtui::SyntaxHighlighter::new("base16-ocean.dark", "js") {
+                    editor = editor.syntax_highlighter(Some(highlighter));
+                }
+
+                f.render_widget(
+                    editor.theme(edtui::EditorTheme::default().block(ratatui::widgets::Block::default())),
+                    layout[1],
+                );
+            } else {
+                let script = if let Some(req) = app.get_current_request() {
+                    match app.scripts_subtab {
+                        crate::tui::app::ScriptsSubTab::PreRequest => {
+                            req.pre_request_script.clone().unwrap_or_default()
+                        }
+                        crate::tui::app::ScriptsSubTab::PostResponse => {
+                            req.post_response_script.clone().unwrap_or_default()
+                        }
+                    }
+                } else {
+                    String::new()
+                };
+                let mut highlighted_script = highlight_content(&script, Some("js"));
+                apply_env_vars(&mut highlighted_script);
+
+                let p = Paragraph::new(highlighted_script)
+                    .scroll((app.details_scroll as u16, 0))
+                    .wrap(Wrap { trim: false });
+                f.render_widget(p, layout[1]);
+            }
         }
     }
 }

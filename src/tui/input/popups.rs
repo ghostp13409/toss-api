@@ -14,6 +14,17 @@ pub fn handle_command_mode(app: &mut App, key: KeyEvent) {
                 app.parse_project_tui("");
             } else if cmd == "env create" {
                 app.create_smart_env();
+            } else if let Some(args) = cmd.strip_prefix("export ") {
+                let parts: Vec<&str> = args.split_whitespace().collect();
+                if parts.len() == 1 {
+                    app.export_active_collection(parts[0], None);
+                } else if parts.len() >= 2 {
+                    app.export_active_collection(parts[0], Some(parts[1]));
+                }
+            } else if cmd == "export" {
+                app.export_active_collection("postman", None);
+            } else if cmd == "console" {
+                app.show_console = !app.show_console;
             } else {
                 match cmd.as_str() {
                     "q" | "quit" => app.should_quit = true,
@@ -152,8 +163,78 @@ pub fn handle_create_item_mode(app: &mut App, key: KeyEvent) {
 pub fn handle_help_mode(app: &mut App, key: KeyEvent) {
     match key.code {
         KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('?') | KeyCode::Enter => {
-            app.input_mode = InputMode::Normal
+            app.help_scroll = 0;
+            app.input_mode = InputMode::Normal;
+        }
+        KeyCode::Char('j') | KeyCode::Down => {
+            app.help_scroll = app.help_scroll.saturating_add(1);
+        }
+        KeyCode::Char('k') | KeyCode::Up => {
+            app.help_scroll = app.help_scroll.saturating_sub(1);
         }
         _ => {}
+    }
+}
+
+pub fn handle_console_mode(app: &mut App, key: KeyEvent) {
+    match key.code {
+        KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('L') | KeyCode::Char('l') => {
+            app.show_console = false;
+        }
+        KeyCode::Char('j') | KeyCode::Down => {
+            app.console_scroll = app.console_scroll.saturating_add(1);
+        }
+        KeyCode::Char('k') | KeyCode::Up => {
+            app.console_scroll = app.console_scroll.saturating_sub(1);
+        }
+        _ => {}
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+    use crate::core::collection::Collection;
+
+    #[test]
+    fn test_handle_command_mode_export() {
+        let mut app = App::new();
+        app.collections.push(Collection::new("Command Mode Col".to_string()));
+        let temp_dir = std::env::temp_dir();
+        let file_path = temp_dir.join("cmd_export_out.json");
+        let path_str = file_path.to_str().unwrap();
+
+        app.command_input = format!("export openapi {}", path_str);
+        handle_command_mode(
+            &mut app,
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+        );
+
+        assert!(file_path.exists());
+        assert_eq!(app.input_mode, InputMode::Normal);
+        let _ = std::fs::remove_file(file_path);
+    }
+
+    #[test]
+    fn test_show_console_toggle() {
+        let mut app = App::new();
+        app.show_console = false;
+
+        // Toggle on
+        app.command_input = "console".to_string();
+        handle_command_mode(
+            &mut app,
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+        );
+        assert!(app.show_console);
+
+        // Toggle off
+        app.command_input = "console".to_string();
+        handle_command_mode(
+            &mut app,
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+        );
+        assert!(!app.show_console);
     }
 }

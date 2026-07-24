@@ -59,6 +59,20 @@ pub enum Commands {
         base_url: Option<String>,
     },
 
+    /// Export a saved collection to Postman or OpenAPI format JSON
+    Export {
+        /// Name of the collection to export
+        name: String,
+
+        /// Format to export: postman (default) or openapi
+        #[arg(short, long, default_value = "postman")]
+        format: String,
+
+        /// Output file path (defaults to <collection>.<format>.json)
+        #[arg(short, long)]
+        output: Option<String>,
+    },
+
     /// Parse a project directory to extract APIs
     Parse {
         /// Path to the project directory

@@ -19,6 +19,9 @@ pub struct ResponseStats {
     pub url: String,
     pub method: String,
     pub remote_addr: Option<String>,
+    pub test_results: Vec<crate::core::scripting::TestResult>,
+    pub console_logs: Vec<crate::core::scripting::ConsoleLog>,
+    pub updated_env_vars: Option<Vec<crate::core::collection::KVParam>>,
 }
 
 pub struct App {
@@ -75,6 +78,12 @@ pub struct App {
     pub body_editor_state: EditorState,
     pub body_editor_handler: EditorEventHandler,
     pub external_editor: Option<String>,
+    pub help_scroll: u16,
+    pub show_console: bool,
+    pub console_scroll: u16,
+    pub scripts_subtab: ScriptsSubTab,
+    pub pre_request_editor_state: EditorState,
+    pub post_response_editor_state: EditorState,
 }
 
 pub struct VisibleItem {

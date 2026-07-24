@@ -28,7 +28,39 @@
               ]
             },
             "description": "A GET request with multiple query parameters and custom headers."
-          }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(\"Executing pre-request for Detailed GET\");",
+                  "let token = uuid();",
+                  "client.environment.set(\"auth_token\", token);",
+                  "let sig = Crypto.hmacSha256(\"secret_key\", \"param1=value1\");",
+                  "client.request.headers[\"X-Signature\"] = sig;"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(\"Executing post-response tests for Detailed GET\");",
+                  "client.test(\"Status code is 200\", function() {",
+                  "  client.expect(response.status).to.be(200);",
+                  "});",
+                  "client.test(\"Response contains expected query params\", function() {",
+                  "  let data = response.json();",
+                  "  client.expect(data).to.have.property(\"args\");",
+                  "  client.expect(data.args.param1).to.be(\"value1\");",
+                  "});"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -47,7 +79,43 @@
               "raw": "{\n  \"user\": {\n    \"name\": \"John Doe\",\n    \"email\": \"john@example.com\",\n    \"roles\": [\"admin\", \"tester\"]\n  },\n  \"timestamp\": \"2023-10-27T10:00:00Z\",\n  \"active\": true\n}"
             },
             "url": "https://httpbin.org/post"
-          }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(\"Preparing POST JSON payload with dynamic timestamp\");",
+                  "let ts = timestamp();",
+                  "client.environment.set(\"last_post_time\", String(ts));",
+                  "console.warn(\"Calculating audit HMAC signature\");",
+                  "let auditSig = Crypto.hmacSha256(\"audit-secret\", String(ts));",
+                  "client.request.headers[\"X-Audit-Sig\"] = auditSig;"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(\"Verifying POST JSON response\");",
+                  "client.test(\"Status code is 200 OK\", function() {",
+                  "  client.expect(response.status).to.be(200);",
+                  "});",
+                  "client.test(\"JSON body user name match\", function() {",
+                  "  let body = response.json();",
+                  "  client.expect(body).to.have.property(\"json\");",
+                  "  client.expect(body.json.user.name).to.be(\"John Doe\");",
+                  "});",
+                  "if (response.status !== 200) {",
+                  "  console.error(\"Unexpected HTTP status:\", response.status);",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "POST Form Data (Multipart)",
@@ -152,7 +220,37 @@
             },
             "method": "GET",
             "url": "https://httpbin.org/bearer"
-          }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(\"Injecting dynamic bearer token\");",
+                  "let dynamicToken = \"bearer-\" + uuid();",
+                  "client.environment.set(\"bearer_token\", dynamicToken);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "console.log(\"Evaluating bearer authentication result\");",
+                  "client.test(\"Status is 200\", function() {",
+                  "  client.expect(response.status).to.be(200);",
+                  "});",
+                  "client.test(\"Response body confirms authentication\", function() {",
+                  "  let data = response.json();",
+                  "  client.expect(data).to.have.property(\"authenticated\");",
+                  "  client.expect(data.authenticated).to.be(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
         }
       ]
     }

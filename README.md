@@ -71,6 +71,7 @@ For quick actions without entering the UI:
 
 - `toss-api send GET https://api.example.com/users`
 - `toss-api run "My Collection" "Get User"`
+- `toss-api export "My Collection" -f openapi -o api_spec.json`
 - `toss-api collections list`
 - `toss-api env show "My Collection"`
 
@@ -79,10 +80,10 @@ Run `toss-api --help` for the full command list.
 ## 🗺️ Roadmap
 
 - [ ] GraphQL Support (with Schema auto-fetching)
-- [ ] Scripting (Pre-request & Post-response JavaScript)
+- [x] Scripting (Pre-request & Post-response JavaScript) ([Scripting Guide](./docs/scripting-guide.md))
 - [ ] Mass API Testing & Results Visualization
 - [ ] More Auth Methods (OAuth2, Digest)
-- [ ] Export to Postman/Swagger
+- [x] Export to Postman/Swagger (OpenAPI)
 
 <!--## 📄 Documentation
 

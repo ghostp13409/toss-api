@@ -79,6 +79,9 @@ pub fn render(f: &mut Frame, app: &mut App) {
     if app.show_autocomplete {
         render_autocomplete(f, app);
     }
+    if app.show_console {
+        render_console_popup(f, app);
+    }
 
     // 5. Cursor positioning
     render_cursor(f, app, &chunks, &columns);

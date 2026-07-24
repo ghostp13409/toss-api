@@ -65,6 +65,12 @@ impl App {
             body_editor_state: edtui::EditorState::default(),
             body_editor_handler: edtui::EditorEventHandler::default(),
             external_editor: None,
+            help_scroll: 0,
+            show_console: false,
+            console_scroll: 0,
+            scripts_subtab: ScriptsSubTab::PreRequest,
+            pre_request_editor_state: edtui::EditorState::default(),
+            post_response_editor_state: edtui::EditorState::default(),
         }
     }
 
@@ -285,5 +291,111 @@ impl App {
         } else {
             self.update_kv_param(val);
         }
+    }
+
+    pub fn export_active_collection(&mut self, format_or_path: &str, maybe_path: Option<&str>) {
+        if self.collections.is_empty() {
+            self.error_message = Some("No active collection to export".to_string());
+            return;
+        }
+
+        let idx = self.selected_collection_index.min(self.collections.len() - 1);
+        let col = &self.collections[idx];
+        let sanitized_name = col.name.to_lowercase().replace(' ', "_");
+
+        let (fmt, raw_path) = match format_or_path.to_lowercase().as_str() {
+            "openapi" | "swagger" => (
+                crate::core::export::ExportFormat::OpenApi,
+                maybe_path,
+            ),
+            "postman" => (
+                crate::core::export::ExportFormat::Postman,
+                maybe_path,
+            ),
+            _ => (
+                crate::core::export::ExportFormat::Postman,
+                Some(format_or_path),
+            ),
+        };
+
+        let default_filename = match fmt {
+            crate::core::export::ExportFormat::Postman => {
+                format!("{}.postman_collection.json", sanitized_name)
+            }
+            crate::core::export::ExportFormat::OpenApi => format!("{}.openapi.json", sanitized_name),
+        };
+
+        let target_path = match raw_path {
+            Some(p) => {
+                let path_buf = std::path::PathBuf::from(p);
+                if path_buf.is_dir() {
+                    path_buf.join(default_filename)
+                } else {
+                    path_buf
+                }
+            }
+            None => std::path::PathBuf::from(default_filename),
+        };
+
+        match crate::core::export::export_collection(col, fmt) {
+            Ok(content) => {
+                if let Err(e) = std::fs::write(&target_path, content) {
+                    self.error_message = Some(format!("Failed to write export file: {}", e));
+                } else {
+                    self.notify(format!("Exported '{}' to {}", col.name, target_path.display()));
+                }
+            }
+            Err(e) => {
+                self.error_message = Some(format!("Export failed: {}", e));
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::collection::Collection;
+
+    #[test]
+    fn test_export_active_collection_empty() {
+        let mut app = App::new();
+        app.export_active_collection("postman", None);
+        assert_eq!(
+            app.error_message,
+            Some("No active collection to export".to_string())
+        );
+    }
+
+    #[test]
+    fn test_export_active_collection_success() {
+        let mut app = App::new();
+        app.collections.push(Collection::new("Test App Collection".to_string()));
+        let temp_dir = std::env::temp_dir();
+        let file_path = temp_dir.join("test_export_out.json");
+        let path_str = file_path.to_str().unwrap();
+
+        app.export_active_collection("openapi", Some(path_str));
+
+        assert!(file_path.exists());
+        assert!(app.notification.is_some());
+        let (msg, _) = app.notification.unwrap();
+        assert!(msg.contains("Exported 'Test App Collection'"));
+
+        let _ = std::fs::remove_file(file_path);
+    }
+
+    #[test]
+    fn test_export_active_collection_directory_path() {
+        let mut app = App::new();
+        app.collections.push(Collection::new("Dir Export Col".to_string()));
+        let temp_dir = std::env::temp_dir();
+        let dir_str = temp_dir.to_str().unwrap();
+
+        app.export_active_collection("postman", Some(dir_str));
+
+        let expected_file = temp_dir.join("dir_export_col.postman_collection.json");
+        assert!(expected_file.exists());
+        let _ = std::fs::remove_file(expected_file);
     }
 }

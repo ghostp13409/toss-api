@@ -1,0 +1,207 @@
+{
+  "info": {
+    "_postman_id": "45dc8802-0422-4b17-9460-8670781e7f49",
+    "name": "Httpbin Comprehensive Sample",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "GET Methods",
+      "item": [
+        {
+          "name": "Detailed GET",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "disabled": false,
+                "description": null
+              },
+              {
+                "key": "X-Test-Header",
+                "value": "TossAPI",
+                "disabled": false,
+                "description": null
+              }
+            ],
+            "url": {
+              "raw": "https://httpbin.org/get?param1=value1&param2=value2",
+              "query": [
+                {
+                  "key": "param1",
+                  "value": "value1",
+                  "disabled": false,
+                  "description": "First test parameter"
+                },
+                {
+                  "key": "param2",
+                  "value": "value2",
+                  "disabled": false,
+                  "description": "Second test parameter"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST Methods",
+      "item": [
+        {
+          "name": "POST JSON Body",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "disabled": false,
+                "description": null
+              }
+            ],
+            "url": {
+              "raw": "https://httpbin.org/post",
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user\": {\n    \"name\": \"John Doe\",\n    \"email\": \"john@example.com\",\n    \"roles\": [\"admin\", \"tester\"]\n  },\n  \"timestamp\": \"2023-10-27T10:00:00Z\",\n  \"active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST Form Data (Multipart)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "https://httpbin.org/post",
+              "query": []
+            }
+          }
+        },
+        {
+          "name": "POST URL Encoded",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "https://httpbin.org/post",
+              "query": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update Methods",
+      "item": [
+        {
+          "name": "PUT Update",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "disabled": false,
+                "description": null
+              }
+            ],
+            "url": {
+              "raw": "https://httpbin.org/put",
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"update_field\": \"new_value\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PATCH Update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "disabled": false,
+                "description": null
+              }
+            ],
+            "url": {
+              "raw": "https://httpbin.org/patch",
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"partial_field\": \"patch_value\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "DELETE Methods",
+      "item": [
+        {
+          "name": "Simple DELETE",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "https://httpbin.org/delete",
+              "query": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Basic Authentication",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://httpbin.org/basic-auth/user/passwd",
+              "query": []
+            }
+          }
+        },
+        {
+          "name": "Bearer Token Auth",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://httpbin.org/bearer",
+              "query": []
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

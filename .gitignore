@@ -25,3 +25,6 @@ target
 
 /target
 .aider*
+.agents
+.antigravitycli
+.claude
