@@ -136,12 +136,12 @@ Once all secrets are set up in GitHub:
 # 1. Update version number in Cargo.toml (e.g. 0.1.6)
 # 2. Commit and push to main branch
 git add Cargo.toml
-git commit -m "chore: bump version to 0.1.6"
+git commit -m "chore: bump version to 0.1.9"
 git push origin main
 
 # 3. Create and push tag
-git tag v0.1.6
-git push origin v0.1.6
+git tag v0.1.9
+git push origin v0.1.9
 ```
 
 ### What Happens Automatically:

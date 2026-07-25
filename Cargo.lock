@@ -3578,7 +3578,7 @@ dependencies = [
 
 [[package]]
 name = "toss-api"
-version = "0.1.5"
+version = "0.1.9"
 dependencies = [
  "anyhow",
  "arboard",
